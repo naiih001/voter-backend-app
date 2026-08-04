@@ -8,6 +8,11 @@ BASE="${1:-http://localhost:8000/api}"
 PASS=0
 FAIL=0
 
+# Ensure clean database
+echo "Running migrate:fresh..."
+cd "$(dirname "$0")/.." && php artisan migrate:fresh --force --quiet 2>/dev/null
+echo ""
+
 green() { printf "\033[32m%s\033[0m\n" "$1"; }
 red()   { printf "\033[31m%s\033[0m\n" "$1"; }
 bold()  { printf "\033[1m%s\033[0m\n" "$1"; }
