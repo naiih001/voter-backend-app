@@ -48,6 +48,7 @@ class ElectionController extends Controller
 
         $election = Election::create([
             ...$validated,
+            'status' => 'draft',
             'created_by' => $request->user()->id,
         ]);
 
