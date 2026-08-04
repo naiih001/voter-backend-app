@@ -24,7 +24,8 @@ class PositionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255', 'unique:positions,title'],
+            'election_id' => ['required', 'exists:elections,id'],
+            'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 

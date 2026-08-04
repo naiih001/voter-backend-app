@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Candidate;
 use App\Models\Position;
-use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -14,8 +13,7 @@ use Illuminate\Validation\ValidationException;
 class VoteController extends Controller
 {
     /**
-     * Check whether the authenticated student is eligible to vote for a
-     * given position — i.e. their matric number has not already been used.
+     * Check whether the authenticated user is eligible to vote for a position.
      */
     public function eligibility(Request $request): JsonResponse
     {
@@ -25,32 +23,27 @@ class VoteController extends Controller
 
         $user = $request->user();
 
-        if (! $user->isStudent() || ! $user->matric_number) {
+        if (! $user->is_eligible) {
             return response()->json([
                 'eligible' => false,
-                'reason' => 'Only students with a matric number may vote.',
+                'reason' => 'User is not eligible to vote.',
             ], 403);
         }
 
-        $alreadyVoted = Vote::where('matric_number', $user->matric_number)
+        $alreadyVoted = Vote::where('voter_id', $user->id)
             ->where('position_id', $request->integer('position_id'))
             ->exists();
 
         return response()->json([
             'eligible' => ! $alreadyVoted,
-            'matric_number' => $user->matric_number,
             'position_id' => $request->integer('position_id'),
-            'reason' => $alreadyVoted
-                ? 'This matric number has already voted for this position.'
-                : null,
+            'reason' => $alreadyVoted ? 'Already voted for this position.' : null,
         ]);
     }
 
     /**
-     * Cast a vote. Enforces one vote per matric number per position at both
+     * Cast a vote. Enforces one vote per user per position at both
      * the application and database (unique index) levels.
-     *
-     * @throws ValidationException
      */
     public function store(Request $request): JsonResponse
     {
@@ -61,46 +54,44 @@ class VoteController extends Controller
 
         $user = $request->user();
 
-        // Only students with a matric number are eligible voters.
-        if (! $user->isStudent() || ! $user->matric_number) {
+        if (! $user->is_eligible) {
             throw ValidationException::withMessages([
-                'matric_number' => 'Only students with a matric number may vote.',
+                'voter_id' => 'User is not eligible to vote.',
             ]);
         }
 
-        // The candidate must actually belong to the position being voted for.
+        // Candidate must belong to the position
         $candidate = Candidate::where('id', $validated['candidate_id'])
             ->where('position_id', $validated['position_id'])
             ->first();
 
         if (! $candidate) {
             throw ValidationException::withMessages([
-                'candidate_id' => 'The selected candidate is not contesting this position.',
+                'candidate_id' => 'Candidate is not contesting this position.',
             ]);
         }
 
-        // Application-level eligibility check: one vote per matric number per position.
-        $alreadyVoted = Vote::where('matric_number', $user->matric_number)
+        // App-level check
+        $alreadyVoted = Vote::where('voter_id', $user->id)
             ->where('position_id', $validated['position_id'])
             ->exists();
 
         if ($alreadyVoted) {
             throw ValidationException::withMessages([
-                'matric_number' => 'This matric number has already voted for this position.',
+                'position_id' => 'Already voted for this position.',
             ]);
         }
 
         try {
             $vote = Vote::create([
-                'user_id' => $user->id,
-                'matric_number' => $user->matric_number,
+                'election_id' => $candidate->position->election_id,
                 'position_id' => $validated['position_id'],
                 'candidate_id' => $validated['candidate_id'],
+                'voter_id' => $user->id,
             ]);
         } catch (QueryException $e) {
-            // Database-level guarantee: the unique index caught a race condition.
             throw ValidationException::withMessages([
-                'matric_number' => 'This matric number has already voted for this position.',
+                'position_id' => 'Already voted for this position.',
             ]);
         }
 
@@ -122,26 +113,5 @@ class VoteController extends Controller
             ->get();
 
         return response()->json($votes);
-    }
-
-    /**
-     * Tally results per position and candidate (admin only).
-     */
-    public function results(): JsonResponse
-    {
-        $positions = Position::with(['candidates' => function ($query) {
-            $query->withCount('votes')->orderByDesc('votes_count');
-        }])->orderBy('title')->get();
-
-        $results = $positions->map(fn (Position $position) => [
-            'position' => $position->title,
-            'total_votes' => $position->candidates->sum('votes_count'),
-            'candidates' => $position->candidates->map(fn (Candidate $candidate) => [
-                'name' => $candidate->name,
-                'votes' => $candidate->votes_count,
-            ])->values(),
-        ]);
-
-        return response()->json($results);
     }
 }
