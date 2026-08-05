@@ -16,7 +16,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     // Constants for backward compat with controllers
-    public const ROLE_STUDENT = 'voter';
+    public const ROLE_VOTER = 'voter';
     public const ROLE_ADMIN = 'admin';
 
     protected $fillable = [

@@ -28,9 +28,9 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in([User::ROLE_STUDENT, User::ROLE_ADMIN])],
+            'role' => ['required', Rule::in([User::ROLE_VOTER, User::ROLE_ADMIN])],
             'matric_number' => [
-                Rule::requiredIf(fn () => $request->input('role') === User::ROLE_STUDENT),
+                Rule::requiredIf(fn () => $request->input('role') === User::ROLE_VOTER),
                 'nullable',
                 'string',
                 'max:50',
@@ -43,8 +43,8 @@ class RegisteredUserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
-            // Matric number only applies to students.
-            'matric_number' => $validated['role'] === User::ROLE_STUDENT
+            // Matric number only applies to voters.
+            'matric_number' => $validated['role'] === User::ROLE_VOTER
                 ? $validated['matric_number']
                 : null,
         ]);

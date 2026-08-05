@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ElectionStatus;
 use App\Models\Candidate;
+use App\Models\Election;
 use App\Models\Position;
 use App\Models\Vote;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class VoteController extends Controller
@@ -27,6 +30,19 @@ class VoteController extends Controller
             return response()->json([
                 'eligible' => false,
                 'reason' => 'User is not eligible to vote.',
+            ], 403);
+        }
+
+        // Check if election is active
+        $position = \App\Models\Position::with('election')->find($request->integer('position_id'));
+        $election = $position->election;
+
+        if ($election->status !== ElectionStatus::OPEN
+            || $election->start_time > now()
+            || $election->end_time < now()) {
+            return response()->json([
+                'eligible' => false,
+                'reason' => 'Election is not currently active.',
             ], 403);
         }
 
@@ -71,34 +87,42 @@ class VoteController extends Controller
             ]);
         }
 
-        // App-level check
-        $alreadyVoted = Vote::where('voter_id', $user->id)
-            ->where('position_id', $validated['position_id'])
-            ->exists();
-
-        if ($alreadyVoted) {
+        // Check election is active
+        $election = $candidate->position->election;
+        if ($election->status !== ElectionStatus::OPEN
+            || $election->start_time > now()
+            || $election->end_time < now()) {
             throw ValidationException::withMessages([
-                'position_id' => 'Already voted for this position.',
+                'election' => 'Election is not currently active.',
             ]);
         }
 
-        try {
+        // Use transaction with lock to prevent race conditions
+        return DB::transaction(function () use ($user, $validated, $candidate) {
+            // Lock the voter's potential vote row for this position
+            $existingVote = Vote::where('voter_id', $user->id)
+                ->where('position_id', $validated['position_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingVote) {
+                throw ValidationException::withMessages([
+                    'position_id' => 'Already voted for this position.',
+                ]);
+            }
+
             $vote = Vote::create([
                 'election_id' => $candidate->position->election_id,
                 'position_id' => $validated['position_id'],
                 'candidate_id' => $validated['candidate_id'],
                 'voter_id' => $user->id,
             ]);
-        } catch (QueryException $e) {
-            throw ValidationException::withMessages([
-                'position_id' => 'Already voted for this position.',
-            ]);
-        }
 
-        return response()->json([
-            'message' => 'Vote cast successfully.',
-            'vote' => $vote,
-        ], 201);
+            return response()->json([
+                'message' => 'Vote cast successfully.',
+                'vote' => $vote,
+            ], 201);
+        });
     }
 
     /**
