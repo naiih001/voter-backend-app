@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Candidate;
+use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,6 +21,16 @@ class CandidateController extends Controller
             ->get();
 
         return response()->json($candidates);
+    }
+
+    /**
+     * List candidates for a specific position.
+     */
+    public function byPosition(Position $position): JsonResponse
+    {
+        return response()->json(
+            $position->candidates()->orderBy('name')->get()
+        );
     }
 
     /**

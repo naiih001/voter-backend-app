@@ -28,10 +28,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Elections — voters see open, admins see all (handled in controller)
     Route::get('/elections', [ElectionController::class, 'index']);
     Route::get('/elections/{election}', [ElectionController::class, 'show']);
+    Route::get('/elections/{election}/positions', [PositionController::class, 'byElection']);
 
     // Positions & candidates — readable by all authenticated users
     Route::get('/positions', [PositionController::class, 'index']);
     Route::get('/positions/{position}', [PositionController::class, 'show']);
+    Route::get('/positions/{position}/candidates', [CandidateController::class, 'byPosition']);
     Route::get('/candidates', [CandidateController::class, 'index']);
     Route::get('/candidates/{candidate}', [CandidateController::class, 'show']);
 

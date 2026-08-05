@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Election;
 use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,16 @@ class PositionController extends Controller
     {
         return response()->json(
             Position::withCount('candidates')->orderBy('title')->get()
+        );
+    }
+
+    /**
+     * List positions for a specific election.
+     */
+    public function byElection(Election $election): JsonResponse
+    {
+        return response()->json(
+            $election->positions()->withCount('candidates')->orderBy('title')->get()
         );
     }
 
