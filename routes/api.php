@@ -3,6 +3,7 @@
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,7 @@ Route::get('/health', function () {
 Route::middleware('auth:sanctum')->group(function () {
     // Current user
     Route::get('/user', fn (Request $request) => $request->user());
+    Route::put('/user', [UserController::class, 'update']);
 
     // Elections — voters see open, admins see all (handled in controller)
     Route::get('/elections', [ElectionController::class, 'index']);
@@ -40,6 +42,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin-only routes
     Route::middleware('admin')->group(function () {
+        // User management
+        Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::put('/users/{user}', [UserController::class, 'adminUpdate']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+
         // Election management
         Route::post('/elections', [ElectionController::class, 'store']);
         Route::put('/elections/{election}', [ElectionController::class, 'update']);
