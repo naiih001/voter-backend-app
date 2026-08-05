@@ -172,4 +172,81 @@ class VoteTest extends TestCase
             'candidate_id' => $this->alice->id,
         ])->assertUnauthorized();
     }
+
+    // ── GET /api/votes (admin) ──
+
+    public function test_admin_can_list_all_votes(): void
+    {
+        $admin = User::factory()->create(['role' => Role::ADMIN]);
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+        ])->assertCreated();
+
+        $response = $this->actingAs($admin)->getJson('/api/votes');
+
+        $response->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.voter.id', $this->voter->id)
+            ->assertJsonPath('0.candidate.name', 'Alice');
+    }
+
+    public function test_voter_cannot_list_all_votes(): void
+    {
+        $this->actingAs($this->voter)->getJson('/api/votes')->assertForbidden();
+    }
+
+    public function test_admin_can_filter_votes_by_position(): void
+    {
+        $admin = User::factory()->create(['role' => Role::ADMIN]);
+        $otherPosition = $this->election->positions()->create(['title' => 'VP']);
+        $otherCandidate = $otherPosition->candidates()->create(['name' => 'Charlie']);
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+        ])->assertCreated();
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $otherPosition->id,
+            'candidate_id' => $otherCandidate->id,
+        ])->assertCreated();
+
+        $response = $this->actingAs($admin)
+            ->getJson("/api/votes?position_id={$this->position->id}");
+
+        $response->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.position.id', $this->position->id);
+    }
+
+    // ── GET /api/votes/stats (admin) ──
+
+    public function test_admin_can_get_vote_stats(): void
+    {
+        $admin = User::factory()->create(['role' => Role::ADMIN]);
+        $voter2 = User::factory()->create(['role' => Role::VOTER, 'is_eligible' => true]);
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+        ])->assertCreated();
+
+        $this->actingAs($voter2)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->bob->id,
+        ])->assertCreated();
+
+        $response = $this->actingAs($admin)->getJson('/api/votes/stats');
+
+        $response->assertOk()
+            ->assertJsonPath('total_votes', 2)
+            ->assertJsonPath('unique_voters', 2);
+    }
+
+    public function test_voter_cannot_get_vote_stats(): void
+    {
+        $this->actingAs($this->voter)->getJson('/api/votes/stats')->assertForbidden();
+    }
 }

@@ -29,7 +29,7 @@ class UserController extends Controller
     public function show(User $user): JsonResponse
     {
         return response()->json(
-            $user->select('id', 'name', 'matric_number', 'email', 'role', 'is_eligible', 'created_at')
+            $user->only('id', 'name', 'matric_number', 'email', 'role', 'is_eligible', 'created_at')
         );
     }
 
