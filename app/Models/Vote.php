@@ -2,34 +2,47 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Vote extends Model
 {
-    protected $fillable = ['user_id', 'matric_number', 'position_id', 'candidate_id'];
+    use HasFactory;
 
-    /**
-     * The user who cast the vote.
-     */
-    public function user(): BelongsTo
+    public $timestamps = false;
+
+    protected $fillable = [
+        'election_id',
+        'position_id',
+        'candidate_id',
+        'voter_id',
+    ];
+
+    protected function casts(): array
     {
-        return $this->belongsTo(User::class);
+        return [
+            'created_at' => 'datetime',
+        ];
     }
 
-    /**
-     * The position voted for.
-     */
+    public function election(): BelongsTo
+    {
+        return $this->belongsTo(Election::class);
+    }
+
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
     }
 
-    /**
-     * The candidate voted for.
-     */
     public function candidate(): BelongsTo
     {
         return $this->belongsTo(Candidate::class);
+    }
+
+    public function voter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voter_id');
     }
 }

@@ -6,27 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('candidates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('position_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->restrictOnDelete();
             $table->string('name');
-            $table->string('matric_number')->nullable();
+            $table->string('photo_path')->nullable();
             $table->text('manifesto')->nullable();
             $table->timestamps();
 
-            // A person can only contest a given position once.
-            $table->unique(['position_id', 'matric_number']);
+            $table->index('position_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('candidates');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Election;
 use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,12 +20,23 @@ class PositionController extends Controller
     }
 
     /**
+     * List positions for a specific election.
+     */
+    public function byElection(Election $election): JsonResponse
+    {
+        return response()->json(
+            $election->positions()->withCount('candidates')->orderBy('title')->get()
+        );
+    }
+
+    /**
      * Create a new position (admin only).
      */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255', 'unique:positions,title'],
+            'election_id' => ['required', 'exists:elections,id'],
+            'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 

@@ -2,71 +2,67 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Role;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'matric_number'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    public const ROLE_STUDENT = 'student';
-
+    // Constants for backward compat with controllers
+    public const ROLE_VOTER = 'voter';
     public const ROLE_ADMIN = 'admin';
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $fillable = [
+        'name',
+        'matric_number',
+        'email',
+        'password',
+        'role',
+        'is_eligible',
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'role' => Role::class,
+            'is_eligible' => 'boolean',
             'password' => 'hashed',
-            'locked_until' => 'datetime',
         ];
     }
 
-    /**
-     * The votes cast by this user.
-     */
     public function votes(): HasMany
     {
-        return $this->hasMany(Vote::class);
+        return $this->hasMany(Vote::class, 'voter_id');
     }
 
-    /**
-     * Determine if the user is an administrator.
-     */
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Candidate::class);
+    }
+
+    public function electionsCreated(): HasMany
+    {
+        return $this->hasMany(Election::class, 'created_by');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    /**
-     * Determine if the user is a student.
-     */
-    public function isStudent(): bool
-    {
-        return $this->role === self::ROLE_STUDENT;
-    }
-
-    /**
-     * Determine if the account is currently locked.
-     */
-    public function isLocked(): bool
-    {
-        return $this->locked_until !== null && $this->locked_until->isFuture();
+        return $this->role === Role::ADMIN;
     }
 }
