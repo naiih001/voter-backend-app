@@ -42,6 +42,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/votes', [VoteController::class, 'store']);
     Route::get('/votes/mine', [VoteController::class, 'mine']);
 
+    // Admin: vote management
+    Route::middleware('admin')->group(function () {
+        Route::get('/votes', [VoteController::class, 'index']);
+        Route::get('/votes/stats', [VoteController::class, 'stats']);
+    });
+
     // Admin-only routes
     Route::middleware('admin')->group(function () {
         // User management

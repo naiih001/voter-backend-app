@@ -114,4 +114,52 @@ class VoteController extends Controller
 
         return response()->json($votes);
     }
+
+    /**
+     * Admin: list all votes with voter and candidate info.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = Vote::with([
+            'voter:id,name,matric_number',
+            'position:id,title',
+            'candidate:id,name',
+        ]);
+
+        if ($request->filled('election_id')) {
+            $query->where('election_id', $request->integer('election_id'));
+        }
+
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->integer('position_id'));
+        }
+
+        return response()->json($query->latest()->get());
+    }
+
+    /**
+     * Admin: voting statistics.
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $query = Vote::query();
+
+        if ($request->filled('election_id')) {
+            $query->where('election_id', $request->integer('election_id'));
+        }
+
+        $totalVotes = $query->count();
+        $uniqueVoters = (clone $query)->distinct('voter_id')->count('voter_id');
+        $byPosition = (clone $query)
+            ->select('position_id', \DB::raw('COUNT(*) as vote_count'))
+            ->groupBy('position_id')
+            ->with('position:id,title')
+            ->get();
+
+        return response()->json([
+            'total_votes' => $totalVotes,
+            'unique_voters' => $uniqueVoters,
+            'by_position' => $byPosition,
+        ]);
+    }
 }
