@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\PositionController;
@@ -71,5 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/candidates', [CandidateController::class, 'store']);
         Route::put('/candidates/{candidate}', [CandidateController::class, 'update']);
         Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy']);
+
+        // Audit logs
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
     });
 });
