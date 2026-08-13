@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -67,6 +68,7 @@ class UserController extends Controller
         ]);
 
         $user->update($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Updated user: {$user->name}"]);
 
         return response()->json([
             'message' => 'User updated.',
@@ -79,7 +81,9 @@ class UserController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
+        $name = $user->name;
         $user->delete();
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted user: {$name}"]);
 
         return response()->json([
             'message' => 'User deleted.',

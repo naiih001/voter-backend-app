@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Election;
 use App\Models\Position;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,6 +42,7 @@ class PositionController extends Controller
         ]);
 
         $position = Position::create($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Created position: {$position->title}"]);
 
         return response()->json([
             'message' => 'Position created.',
@@ -69,6 +71,7 @@ class PositionController extends Controller
         ]);
 
         $position->update($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Updated position: {$position->title}"]);
 
         return response()->json([
             'message' => 'Position updated.',
@@ -81,7 +84,9 @@ class PositionController extends Controller
      */
     public function destroy(Position $position): JsonResponse
     {
+        $title = $position->title;
         $position->delete();
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted position: {$title}"]);
 
         return response()->json([
             'message' => 'Position removed.',
