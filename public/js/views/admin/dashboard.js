@@ -67,7 +67,7 @@ export async function view(params, root) {
     }
     const s = res.data;
     statCards.appendChild(statCard('Total Votes', String(s.total_votes), 'var(--blue-light)', 'var(--blue-primary)'));
-    statCards.appendChild(statCard('Unique Voters', String(s.unique_voters), '#FEE2E2', 'var(--red-badge)'));
+    statCards.appendChild(statCard('Unique Voters', String(s.unique_voters), 'var(--red-light)', 'var(--red-badge)'));
 
     const rows = s.by_position || [];
     if (rows.length === 0) {
