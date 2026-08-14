@@ -12,7 +12,7 @@ Route::post('/register', [RegisteredUserController::class, 'store'])
     ->name('register');
 
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->name('login');
+    ->name('api.login');
 
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
     ->name('password.email');

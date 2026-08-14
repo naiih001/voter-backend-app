@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Election;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -51,6 +52,7 @@ class ElectionController extends Controller
             'status' => 'draft',
             'created_by' => $request->user()->id,
         ]);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Created election: {$election->title}"]);
 
         return response()->json([
             'message' => 'Election created.',
@@ -72,6 +74,7 @@ class ElectionController extends Controller
         ]);
 
         $election->update($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Updated election: {$election->title}"]);
 
         return response()->json([
             'message' => 'Election updated.',
@@ -84,7 +87,9 @@ class ElectionController extends Controller
      */
     public function destroy(Election $election): JsonResponse
     {
+        $title = $election->title;
         $election->delete();
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted election: {$title}"]);
 
         return response()->json([
             'message' => 'Election deleted.',

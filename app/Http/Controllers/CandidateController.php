@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Candidate;
 use App\Models\Position;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -45,7 +46,6 @@ class CandidateController extends Controller
                 'nullable',
                 'string',
                 'max:50',
-                // A person may only contest a given position once.
                 Rule::unique('candidates')->where(
                     fn ($query) => $query->where('position_id', $request->input('position_id'))
                 ),
@@ -54,6 +54,7 @@ class CandidateController extends Controller
         ]);
 
         $candidate = Candidate::create($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Added candidate: {$candidate->name}"]);
 
         return response()->json([
             'message' => 'Candidate added.',
@@ -92,6 +93,7 @@ class CandidateController extends Controller
         ]);
 
         $candidate->update($validated);
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Updated candidate: {$candidate->name}"]);
 
         return response()->json([
             'message' => 'Candidate updated.',
@@ -104,7 +106,9 @@ class CandidateController extends Controller
      */
     public function destroy(Candidate $candidate): JsonResponse
     {
+        $name = $candidate->name;
         $candidate->delete();
+        AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted candidate: {$name}"]);
 
         return response()->json([
             'message' => 'Candidate removed.',

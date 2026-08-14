@@ -16,14 +16,23 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required_without:matric_number', 'string', 'email'],
+            'matric_number' => ['required_without:email', 'string'],
             'password' => ['required', 'string'],
         ];
     }
 
     public function authenticate(): void
     {
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('password');
+
+        if ($this->filled('matric_number')) {
+            $credentials['matric_number'] = $this->input('matric_number');
+        } else {
+            $credentials['email'] = $this->input('email');
+        }
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);

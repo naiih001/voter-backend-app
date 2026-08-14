@@ -132,7 +132,7 @@ class VoteController extends Controller
     {
         $votes = $request->user()
             ->votes()
-            ->with(['position:id,title', 'candidate:id,name'])
+            ->with(['position:id,title', 'candidate:id,name', 'election:id,title'])
             ->latest()
             ->get();
 
