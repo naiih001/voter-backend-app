@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/elections', [ElectionController::class, 'index']);
     Route::get('/elections/{election}', [ElectionController::class, 'show']);
     Route::get('/elections/{election}/positions', [PositionController::class, 'byElection']);
+    Route::get('/elections/{election}/results', [ElectionController::class, 'results']);
 
     // Positions & candidates — readable by all authenticated users
     Route::get('/positions', [PositionController::class, 'index']);
@@ -53,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->group(function () {
         // User management
         Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
         Route::get('/users/{user}', [UserController::class, 'show']);
         Route::put('/users/{user}', [UserController::class, 'adminUpdate']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
@@ -61,7 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/elections', [ElectionController::class, 'store']);
         Route::put('/elections/{election}', [ElectionController::class, 'update']);
         Route::delete('/elections/{election}', [ElectionController::class, 'destroy']);
-        Route::get('/elections/{election}/results', [ElectionController::class, 'results']);
+        Route::post('/elections/{election}/publish', [ElectionController::class, 'publish']);
+        Route::post('/elections/{election}/unpublish', [ElectionController::class, 'unpublish']);
 
         // Position management
         Route::post('/positions', [PositionController::class, 'store']);

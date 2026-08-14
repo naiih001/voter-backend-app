@@ -7,9 +7,22 @@ use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+        $user = User::create([...$validated, 'password' => Hash::make($validated['password']), 'role' => User::ROLE_ADMIN, 'matric_number' => null]);
+        AuditLog::create(['user_id' => $request->user()->id, 'action' => "Created administrator: {$user->name}"]);
+        return response()->json(['message' => 'Administrator created.', 'user' => $user->only('id', 'name', 'email', 'role')], 201);
+    }
     /**
      * List all users (admin only).
      */
@@ -67,6 +80,12 @@ class UserController extends Controller
             'is_eligible' => ['sometimes', 'required', 'boolean'],
         ]);
 
+        if ($user->id === $request->user()->id && (($validated['role'] ?? $user->role->value) !== 'admin')) {
+            return response()->json(['message' => 'You cannot demote yourself.'], 409);
+        }
+        if (($validated['role'] ?? $user->role->value) !== 'admin' && User::where('role', 'admin')->count() <= 1) {
+            return response()->json(['message' => 'At least one administrator must remain.'], 409);
+        }
         $user->update($validated);
         AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Updated user: {$user->name}"]);
 
@@ -81,6 +100,9 @@ class UserController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
+        if ($user->id === request()->user()->id || ($user->isAdmin() && User::where('role', 'admin')->count() <= 1)) {
+            return response()->json(['message' => 'This administrator cannot be removed.'], 409);
+        }
         $name = $user->name;
         $user->delete();
         AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted user: {$name}"]);

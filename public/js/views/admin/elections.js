@@ -1,161 +1,134 @@
-// ============================================================
-//  Admin — Elections (CRUD + lifecycle + results)
-// ============================================================
-
 import { api } from '../../core/api.js';
 import { ui } from '../../core/ui.js';
 import { navigate } from '../../core/router.js';
 
-const STATUS_CLASS = { draft: 'orange', open: 'green', closed: 'red' };
+const STATUS_CLASS = { draft: 'orange', scheduled: 'blue', open: 'green', closed: 'red' };
 
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
     <div class="flex-between mt-32">
-      <div>
-        <h1 class="page-title">Elections</h1>
-        <p class="page-subtitle">Create elections, manage their lifecycle, and view results.</p>
-      </div>
-      <button class="btn-primary" id="create-btn">+ New Election</button>
+      <div><h1 class="page-title">Election office</h1><p class="page-subtitle">Prepare, publish, and review every university election from one place.</p></div>
+      <button class="btn-primary" id="create-election">New election</button>
     </div>
-    <div id="elections-table" class="card mt-24" style="padding:0;"></div>`;
+    <div class="docket-rail mt-24">
+      ${['Draft', 'Scheduled', 'Voting open', 'Results ready'].map((label) => `<div class="docket-step"><strong>Lifecycle</strong><span>${label}</span></div>`).join('')}
+    </div>
+    <div id="election-list" class="card mt-24" style="padding:0"></div>`;
 
-  const tableEl = root.querySelector('#elections-table');
-  tableEl.appendChild(ui.loadingBlock('Loading elections…'));
-
-  root.querySelector('#create-btn').addEventListener('click', () => electionModal(null));
-
-  async function load() {
-    const res = await api.get('/elections');
-    if (!res.ok) {
-      tableEl.innerHTML = '<div class="alert alert-error" style="margin:16px;">Failed to load elections.</div>';
-      return;
-    }
-    const elections = res.data;
-    if (elections.length === 0) {
-      tableEl.innerHTML = '';
-      tableEl.appendChild(ui.emptyState('No elections yet. Create your first election.'));
-      return;
-    }
-    tableEl.innerHTML = `
-      <div class="table-wrap">
-        <table class="table">
-          <thead><tr>
-            <th>Title</th><th>Status</th><th>Start</th><th>End</th><th>Positions</th><th style="text-align:right;">Actions</th>
-          </tr></thead>
-          <tbody>
-            ${elections.map((e) => `
-              <tr data-id="${e.id}">
-                <td><strong>${ui.escapeHtml(e.title)}</strong>${e.description ? `<div class="text-muted" style="font-size:.8125rem;">${ui.escapeHtml(e.description.slice(0, 80))}</div>` : ''}</td>
-                <td><span class="badge-pill ${STATUS_CLASS[e.status] || ''}">${ui.escapeHtml(e.status)}</span></td>
-                <td class="text-muted">${ui.escapeHtml(ui.formatDate(e.start_time))}</td>
-                <td class="text-muted">${ui.escapeHtml(ui.formatDate(e.end_time))}</td>
-                <td>${e.positions_count || 0}</td>
-                <td style="text-align:right;white-space:nowrap;">
-                  <button class="btn-pill act-edit">Edit</button>
-                  <button class="btn-pill act-toggle">${e.status === 'open' ? 'Close' : 'Open'}</button>
-                  <button class="btn-pill act-results">Results</button>
-                  <button class="btn-pill act-delete">Delete</button>
-                </td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-
-    tableEl.querySelectorAll('tr[data-id]').forEach((row) => {
-      const id = row.dataset.id;
-      const election = elections.find((e) => String(e.id) === String(id));
-      row.querySelector('.act-edit').addEventListener('click', () => electionModal(election));
-      row.querySelector('.act-toggle').addEventListener('click', () => toggleStatus(election));
-      row.querySelector('.act-results').addEventListener('click', () => navigate(`/admin/elections/${election.id}/results`));
-      row.querySelector('.act-delete').addEventListener('click', () => deleteElection(election));
-    });
+  root.querySelector('#create-election').addEventListener('click', () => electionEditor());
+  const list = root.querySelector('#election-list');
+  list.appendChild(ui.loadingBlock('Loading elections...'));
+  const response = await api.get('/elections');
+  if (!response.ok) {
+    list.innerHTML = '<div class="alert alert-error" style="margin:16px">Elections could not be loaded. Try again.</div>';
+    return;
   }
-  function electionModal(election) {
-    const isEdit = !!election;
-    const title = ui.field.text({ label: 'Title', value: election?.title || '', placeholder: 'e.g. Student Council 2026' });
-    const description = ui.field.textarea({ label: 'Description', value: election?.description || '' });
-    const start = ui.field.text({ label: 'Start Time', type: 'datetime-local', value: election ? ui.toLocalInput(election.start_time) : '' });
-    const end = ui.field.text({ label: 'End Time', type: 'datetime-local', value: election ? ui.toLocalInput(election.end_time) : '' });
-    const status = ui.field.select({
-      label: 'Status',
-      value: election?.status || 'draft',
-      options: [
-        { value: 'draft', label: 'Draft' },
-        { value: 'open', label: 'Open' },
-        { value: 'closed', label: 'Closed' },
-      ],
-    });
-
-    const form = ui.el('div', {}, title.node, description.node, start.node, end.node);
-    if (isEdit) form.appendChild(status.node);
-
-    const alertEl = ui.el('div', { class: 'alert', style: 'display:none;margin-bottom:16px;' });
-    form.insertBefore(alertEl, form.firstChild);
-
-    const m = ui.openModal({
-      title: isEdit ? 'Edit Election' : 'New Election',
-      body: form,
-      actions: [
-        { label: 'Cancel', class: 'btn-outline', onClick: () => ui.closeModal() },
-        { label: isEdit ? 'Save Changes' : 'Create Election', class: 'btn-primary', onClick: () => {} },
-      ],
-    });
-    const submitBtn = m.actionsNode.querySelector('.btn-primary');
-
-    submitBtn.addEventListener('click', async () => {
-      const payload = {
-        title: title.value(),
-        description: description.value(),
-        start_time: ui.toBackendDate(start.value()),
-        end_time: ui.toBackendDate(end.value()),
-      };
-      if (isEdit) payload.status = status.value();
-      if (!payload.title || !payload.start_time || !payload.end_time) {
-        ui.showAlert(alertEl, 'Please fill in title, start time, and end time.');
-        return;
-      }
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Saving…';
-      ui.hideAlert(alertEl);
-      const res = isEdit ? await api.put(`/elections/${election.id}`, payload) : await api.post('/elections', payload);
-      if (res.ok) {
-        ui.toast(`${payload.title} ${isEdit ? 'updated.' : 'created.'}`, 'success');
-        ui.closeModal();
-        load();
-      } else {
-        let msg = res.data?.message || 'Could not save election.';
-        if (res.data?.errors) msg = Object.values(res.data.errors).flat().join(' ');
-        ui.showAlert(alertEl, msg);
-        ui.toast(msg, 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = isEdit ? 'Save Changes' : 'Create Election';
-      }
-    });
+  if (!response.data.length) {
+    list.innerHTML = '';
+    list.appendChild(ui.emptyState('No elections yet. Create a draft to begin.'));
+    return;
   }
+  list.innerHTML = `<div class="table-wrap"><table class="table"><thead><tr><th>Election</th><th>Window</th><th>Ballot</th><th>Status</th><th></th></tr></thead><tbody>${response.data.map((e) => `
+    <tr><td><strong>${ui.escapeHtml(e.title)}</strong><div class="text-muted">${ui.escapeHtml(e.description || 'No description')}</div></td>
+    <td class="text-muted">${ui.escapeHtml(ui.formatDate(e.start_time))}<br>${ui.escapeHtml(ui.formatDate(e.end_time))}</td>
+    <td>${e.positions_count || 0} positions</td><td><span class="badge-pill ${STATUS_CLASS[e.status] || ''}">${ui.escapeHtml(e.status)}</span></td>
+    <td style="text-align:right"><button class="btn-outline manage-election" data-id="${e.id}">Manage</button></td></tr>`).join('')}</tbody></table></div>`;
+  list.querySelectorAll('.manage-election').forEach((button) => button.addEventListener('click', () => navigate(`/admin/elections/${button.dataset.id}`)));
+}
 
-  async function toggleStatus(election) {
-    const newStatus = election.status === 'open' ? 'closed' : 'open';
-    const res = await api.put(`/elections/${election.id}`, { status: newStatus });
-    if (res.ok) {
-      ui.toast(`Election "${election.title}" ${newStatus}.`, 'success');
-      load();
-    } else {
-      ui.toast(res.data?.message || 'Could not update status.', 'error');
-    }
+export async function detail(params, root) {
+  root.className = 'container';
+  root.innerHTML = '<div class="mt-32" id="workspace"></div>';
+  const workspace = root.querySelector('#workspace');
+  workspace.appendChild(ui.loadingBlock('Opening election workspace...'));
+  const response = await api.get(`/elections/${params.id}`);
+  if (!response.ok) {
+    workspace.innerHTML = '<div class="alert alert-error">Election could not be opened.</div>';
+    return;
   }
+  const election = response.data;
+  const positions = election.positions || [];
+  const readiness = election.readiness || { ready: false, checks: [] };
+  workspace.innerHTML = `
+    <a href="/admin/elections" class="link-blue">Back to elections</a>
+    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div>
+    ${docket(election)}
+    <nav class="workspace-tabs" aria-label="Election workspace"><a href="#overview" class="active">Overview</a><a href="#ballot">Ballot</a><a href="#schedule">Schedule</a><a href="/admin/elections/${election.id}/results">Results</a></nav>
+    <section id="overview" class="mt-24"><div class="card"><div class="flex-between"><h2 class="section-title">Publication readiness</h2>${lifecycleButton(election)}</div>
+      <div class="mt-16">${readiness.checks.map((check) => `<div class="announcement-item"><strong>${check.passed ? 'Ready' : 'Needs attention'}</strong><p class="text-muted">${ui.escapeHtml(check.label)}</p></div>`).join('')}</div></div></section>
+    <section id="ballot" class="mt-32"><div class="flex-between"><div><h2 class="section-title">Ballot structure</h2><p class="page-subtitle">Positions and candidates are locked after publication.</p></div>${election.status === 'draft' ? '<button class="btn-primary" id="add-position">Add position</button>' : ''}</div>
+      <div class="mt-16" id="position-list">${positions.length ? positions.map((position) => positionBlock(position, election)).join('') : '<div class="card"><p class="text-muted">No positions yet.</p></div>'}</div></section>
+    <section id="schedule" class="mt-32 card"><div class="flex-between"><div><h2 class="section-title">Voting window</h2><p class="page-subtitle">Opening and closing happen automatically.</p></div>${election.status === 'draft' ? '<button class="btn-outline" id="edit-election">Edit details</button>' : ''}</div>
+      <p class="mt-16"><strong>Starts</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.start_time))}</span></p><p class="mt-16"><strong>Ends</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.end_time))}</span></p></section>`;
 
-  async function deleteElection(election) {
-    const ok = await ui.confirmDialog(`Delete election "${election.title}"? This soft-deletes it and cannot be undone from the UI.`);
-    if (!ok) return;
-    const res = await api.del(`/elections/${election.id}`);
-    if (res.ok) {
-      ui.toast(`Election "${election.title}" deleted.`, 'success');
-      load();
-    } else {
-      ui.toast(res.data?.message || 'Could not delete election.', 'error');
-    }
-  }
+  workspace.querySelector('#publish-election')?.addEventListener('click', () => lifecycle(election, 'publish'));
+  workspace.querySelector('#unpublish-election')?.addEventListener('click', () => lifecycle(election, 'unpublish'));
+  workspace.querySelector('#edit-election')?.addEventListener('click', () => electionEditor(election));
+  workspace.querySelector('#add-position')?.addEventListener('click', () => positionEditor(election));
+  workspace.querySelectorAll('.add-candidate').forEach((button) => button.addEventListener('click', () => candidateEditor(button.dataset.position)));
+}
 
-  load();
+function docket(election) {
+  const states = ['draft', 'scheduled', 'open', 'closed'];
+  const labels = ['Preparation', 'Scheduled', 'Voting open', 'Results ready'];
+  return `<div class="docket-rail mt-24">${states.map((state, i) => `<div class="docket-step ${election.status === state ? 'current' : ''}"><strong>${i + 1} of 4</strong><span>${labels[i]}</span></div>`).join('')}</div>`;
+}
+
+function lifecycleButton(election) {
+  if (election.status === 'draft') return '<button class="btn-primary" id="publish-election">Publish election</button>';
+  if (election.status === 'scheduled') return '<button class="btn-outline" id="unpublish-election">Return to draft</button>';
+  return '<span class="text-muted">Lifecycle is automatic</span>';
+}
+
+function positionBlock(position, election) {
+  return `<div class="card" style="margin-bottom:12px"><div class="flex-between"><div><h3 class="section-title">${ui.escapeHtml(position.title)}</h3><p class="text-muted">${ui.escapeHtml(position.description || 'No description')}</p></div>${election.status === 'draft' ? `<button class="btn-outline add-candidate" data-position="${position.id}">Add candidate</button>` : ''}</div>
+    <div class="mt-16">${position.candidates?.length ? position.candidates.map((candidate) => `<div class="announcement-item"><strong>${ui.escapeHtml(candidate.name)}</strong><p class="text-muted">${ui.escapeHtml(candidate.matric_number || 'No matric number')} · ${ui.escapeHtml(candidate.manifesto || 'No manifesto')}</p></div>`).join('') : '<p class="text-muted">No candidates yet.</p>'}</div></div>`;
+}
+
+async function lifecycle(election, action) {
+  const response = await api.post(`/elections/${election.id}/${action}`, {});
+  if (response.ok) { ui.toast(response.data.message, 'success'); detail({ id: election.id }, document.getElementById('app-root')); }
+  else ui.toast(response.data?.message || 'Election could not be updated.', 'error');
+}
+
+function electionEditor(election = null) {
+  const title = ui.field.text({ label: 'Election title', value: election?.title || '', placeholder: 'Student Union Election 2026' });
+  const description = ui.field.textarea({ label: 'Description', value: election?.description || '' });
+  const start = ui.field.text({ label: 'Voting starts', type: 'datetime-local', value: election ? ui.toLocalInput(election.start_time) : '' });
+  const end = ui.field.text({ label: 'Voting ends', type: 'datetime-local', value: election ? ui.toLocalInput(election.end_time) : '' });
+  const body = ui.el('div', {}, title.node, description.node, start.node, end.node);
+  const modal = ui.openModal({ title: election ? 'Edit election' : 'Create election', body, actions: [{ label: 'Cancel', class: 'btn-outline', onClick: ui.closeModal }, { label: election ? 'Save changes' : 'Create draft', class: 'btn-primary', onClick: () => {} }] });
+  modal.actionsNode.querySelector('.btn-primary').addEventListener('click', async () => {
+    const payload = { title: title.value(), description: description.value(), start_time: ui.toBackendDate(start.value()), end_time: ui.toBackendDate(end.value()) };
+    const response = election ? await api.put(`/elections/${election.id}`, payload) : await api.post('/elections', payload);
+    if (!response.ok) { ui.toast(response.data?.message || 'Election could not be saved.', 'error'); return; }
+    ui.closeModal(); ui.toast(election ? 'Election updated.' : 'Draft created.', 'success');
+    navigate(`/admin/elections/${election?.id || response.data.election.id}`);
+  });
+}
+
+function positionEditor(election) {
+  const title = ui.field.text({ label: 'Position title', placeholder: 'President' });
+  const description = ui.field.textarea({ label: 'Description' });
+  const body = ui.el('div', {}, title.node, description.node);
+  const modal = ui.openModal({ title: 'Add position', body, actions: [{ label: 'Cancel', class: 'btn-outline', onClick: ui.closeModal }, { label: 'Add position', class: 'btn-primary', onClick: () => {} }] });
+  modal.actionsNode.querySelector('.btn-primary').addEventListener('click', async () => {
+    const response = await api.post('/positions', { election_id: election.id, title: title.value(), description: description.value() });
+    if (!response.ok) { ui.toast(response.data?.message || 'Position could not be added.', 'error'); return; }
+    ui.closeModal(); detail({ id: election.id }, document.getElementById('app-root'));
+  });
+}
+
+function candidateEditor(positionId) {
+  const name = ui.field.text({ label: 'Candidate name' });
+  const matric = ui.field.text({ label: 'Matric number' });
+  const manifesto = ui.field.textarea({ label: 'Manifesto' });
+  const body = ui.el('div', {}, name.node, matric.node, manifesto.node);
+  const modal = ui.openModal({ title: 'Add candidate', body, actions: [{ label: 'Cancel', class: 'btn-outline', onClick: ui.closeModal }, { label: 'Add candidate', class: 'btn-primary', onClick: () => {} }] });
+  modal.actionsNode.querySelector('.btn-primary').addEventListener('click', async () => {
+    const response = await api.post('/candidates', { position_id: Number(positionId), name: name.value(), matric_number: matric.value(), manifesto: manifesto.value() });
+    if (!response.ok) { ui.toast(response.data?.message || 'Candidate could not be added.', 'error'); return; }
+    ui.closeModal(); location.reload();
+  });
 }

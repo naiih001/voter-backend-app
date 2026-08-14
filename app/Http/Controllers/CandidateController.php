@@ -53,6 +53,10 @@ class CandidateController extends Controller
             'manifesto' => ['nullable', 'string'],
         ]);
 
+        if (Position::findOrFail($validated['position_id'])->election->isPublished()) {
+            return response()->json(['message' => 'Published election ballots are locked.'], 409);
+        }
+
         $candidate = Candidate::create($validated);
         AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Added candidate: {$candidate->name}"]);
 
@@ -75,6 +79,9 @@ class CandidateController extends Controller
      */
     public function update(Request $request, Candidate $candidate): JsonResponse
     {
+        if ($candidate->position->election->isPublished()) {
+            return response()->json(['message' => 'Published election ballots are locked.'], 409);
+        }
         $validated = $request->validate([
             'position_id' => ['sometimes', 'required', 'exists:positions,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -106,6 +113,9 @@ class CandidateController extends Controller
      */
     public function destroy(Candidate $candidate): JsonResponse
     {
+        if ($candidate->position->election->isPublished() || $candidate->votes()->exists()) {
+            return response()->json(['message' => 'Published candidates or candidates with votes cannot be deleted.'], 409);
+        }
         $name = $candidate->name;
         $candidate->delete();
         AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted candidate: {$name}"]);

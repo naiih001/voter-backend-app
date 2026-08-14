@@ -40,6 +40,7 @@ const routes = [
   { pattern: '/elections/:id', view: elections.detail, auth: 'user' },
   { pattern: '/admin', view: adminDashboard.view, auth: 'admin' },
   { pattern: '/admin/elections', view: adminElections.view, auth: 'admin' },
+  { pattern: '/admin/elections/:id', view: adminElections.detail, auth: 'admin' },
   { pattern: '/admin/elections/:id/results', view: adminResults.view, auth: 'admin' },
   { pattern: '/admin/positions', view: adminPositions.view, auth: 'admin' },
   { pattern: '/admin/candidates', view: adminCandidates.view, auth: 'admin' },

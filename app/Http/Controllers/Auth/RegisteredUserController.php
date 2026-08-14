@@ -8,7 +8,6 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 
@@ -17,8 +16,7 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * Supports both student and admin roles. Students must supply a unique
-     * matric number, which is later used to enforce voter eligibility.
+     * Public registration creates voters. Administrators are provisioned by administrators.
      *
      * @throws ValidationException
      */
@@ -28,10 +26,8 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in([User::ROLE_VOTER, User::ROLE_ADMIN])],
             'matric_number' => [
-                Rule::requiredIf(fn () => $request->input('role') === User::ROLE_VOTER),
-                'nullable',
+                'required',
                 'string',
                 'max:50',
                 'unique:'.User::class,
@@ -42,11 +38,8 @@ class RegisteredUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
-            // Matric number only applies to voters.
-            'matric_number' => $validated['role'] === User::ROLE_VOTER
-                ? $validated['matric_number']
-                : null,
+            'role' => User::ROLE_VOTER,
+            'matric_number' => $validated['matric_number'],
         ]);
 
         event(new Registered($user));
