@@ -7,6 +7,32 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## UniVote EVS Development
+
+Install the PHP and frontend dependencies, then start the application:
+
+```bash
+composer install
+npm install
+composer dev
+```
+
+`composer dev` starts Laravel, the queue listener, logs, and the Tailwind CSS
+watcher. Tailwind source files live in `resources/css`; the vanilla ES-module
+SPA remains in `public/js`.
+
+Build the production stylesheet with:
+
+```bash
+npm run build
+```
+
+Run the backend test suite with:
+
+```bash
+composer test
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

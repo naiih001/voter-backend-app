@@ -22,7 +22,8 @@ export async function view(params, root) {
   const res = await api.get('/elections');
   if (!res.ok) {
     list.innerHTML = '';
-    list.appendChild(ui.el('div', { class: 'alert alert-error' }, 'Failed to load elections.'));
+    const msg = res.data?.message ?? 'Failed to load elections.';
+    list.appendChild(ui.el('div', { class: 'alert alert-error' }, msg));
     return;
   }
   const elections = res.data;

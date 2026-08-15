@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "./components.css" layer(components);
+
+@source "../../resources/views/**/*.blade.php";
+@source "../../public/js/**/*.js";
+
+@theme {
+  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #18211e;
+  --color-campus: #0f5b46;
+  --color-campus-dark: #0a4435;
+  --color-oxblood: #8d2638;
+  --color-brass: #b78324;
+  --color-paper: #f7faf8;
+  --color-mist: #dce8e2;
+}
+
+@layer base {
+  html {
+    min-width: 320px;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: var(--amber-light);
+    color: var(--text-primary);
+  }
+
+  :focus-visible {
+    outline: 3px solid rgb(183 131 36 / 42%);
+    outline-offset: 2px;
+  }
+}

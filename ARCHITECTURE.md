@@ -1,7 +1,8 @@
 # UniVote EVS — Architecture Overview
 
 > Electronic Voting System ("UniVote EVS"). A Laravel 13 JSON API paired with a
-> dependency-free, build-free single-page application (SPA) front end. This
+> dependency-free single-page application (SPA) front end with a Tailwind CSS
+> build step. This
 > document describes how the system is structured, how a request flows through
 > it, and where the important design decisions live.
 
@@ -16,10 +17,10 @@
 | Database           | PostgreSQL (`voter_backend`)                                  |
 | Auth mechanism     | Laravel Sanctum personal-access tokens (Bearer)               |
 | Backend surface    | Stateless JSON REST API under `/api/*`                        |
-| Front end          | Vanilla ES-module SPA, **no build step**                      |
+| Front end          | Vanilla ES-module SPA + Tailwind CSS CLI                      |
 | Frontend transport | Native `fetch` + History API router                           |
 | State store        | `localStorage` (token + cached user)                          |
-| Styling           | Hand-written CSS (`public/css/styles.css`)                    |
+| Styling            | Tailwind source (`resources/css`) → `public/css/app.css`       |
 | Tests              | PHPUnit 12 (Feature + Unit)                                   |
 | Queue / cache      | `sync` queue, `file` cache/session (local dev defaults)       |
 
@@ -318,10 +319,9 @@ These are factual notes about the current state, not required changes:
 6. **Synchronous queue.** `QUEUE_CONNECTION=sync` and the `composer dev`
    script runs `queue:listen`, but no jobs are dispatched. Email verification
    (`MAIL_MAILER=log`) and any future jobs run inline. Fine for local dev.
-7. **Frontend has no build pipeline.** `package.json` `dev`/`build` are stubs;
-   ES modules are served straight from `public/js`. This keeps things simple
-   but means no bundling/minification; fine for an internal tool, revisit if
-   the bundle grows.
+7. **Only CSS is built.** ES modules are still served directly from `public/js`,
+   while Tailwind CSS compiles `resources/css/app.css` to `public/css/app.css`.
+   Run `npm run dev` while editing styles and `npm run build` for production.
 
 ---
 
@@ -372,6 +372,8 @@ Design characteristics:
   `core/store.js`.
 - **Navigation** is intercepted globally: same-origin `<a>` clicks call
   `navigate()` (History API) instead of full reloads; `popstate` re-renders.
-- **Styling** is one hand-written `styles.css` (nav, cards, forms, modals,
-  toasts, responsive layout).
+- **Styling** uses Tailwind CSS v4. The theme and source registration live in
+  `resources/css/app.css`; shared component selectors used by the vanilla SPA
+  live in `resources/css/components.css`; the generated browser asset is
+  `public/css/app.css`.
 ```

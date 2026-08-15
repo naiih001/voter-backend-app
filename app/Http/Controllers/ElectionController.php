@@ -16,8 +16,10 @@ class ElectionController extends Controller
     {
         $query = Election::withCount('positions');
 
+        // Voters see only elections that are published AND inside their voting
+        // window. Admins see everything (drafts, future, and closed too).
         if (! $request->user()->isAdmin()) {
-            $query->whereNotNull('published_at');
+            $query->active();
         }
 
         return response()->json($query->orderByDesc('created_at')->get());

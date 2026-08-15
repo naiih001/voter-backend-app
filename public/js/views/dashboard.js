@@ -95,7 +95,7 @@ export async function view(params, root) {
 
   const electionsRes = await api.get('/elections');
   if (!electionsRes.ok) {
-    ui.showAlert(alertEl, 'Failed to load elections.');
+    ui.showAlert(alertEl, electionsRes.data?.message ?? 'Failed to load elections.');
     return;
   }
   const elections = electionsRes.data;

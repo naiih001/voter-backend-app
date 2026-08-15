@@ -67,9 +67,28 @@ export async function view(params, root) {
     return;
   }
 
-  const positions = positionsRes.data;
+  const votesRes = await api.get('/votes/mine');
+  const previousVotes = votesRes.ok ? votesRes.data : [];
+  const votedPositionIds = new Set(
+    previousVotes
+      .filter((vote) => String(vote.election?.id) === String(election.id))
+      .map((vote) => String(vote.position?.id))
+  );
+  const positions = positionsRes.data.filter((position) => !votedPositionIds.has(String(position.id)));
+
+  if (positions.length === 0) {
+    stepperEl.innerHTML = '';
+    contentEl.innerHTML = '';
+    contentEl.appendChild(ui.emptyState('You have already voted for every position in this election.'));
+    return;
+  }
+
   let currentStep = 0;
   let selections = JSON.parse(localStorage.getItem('uv_ballot') || '{}');
+  selections = Object.fromEntries(
+    Object.entries(selections).filter(([positionId]) => positions.some((position) => String(position.id) === positionId))
+  );
+  localStorage.setItem('uv_ballot', JSON.stringify(selections));
   let submitted = false;
 
   function renderStepper() {

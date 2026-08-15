@@ -51,20 +51,24 @@ class ElectionTest extends TestCase
 
     public function test_admin_can_update_election(): void
     {
+        // Unpublished (draft) election — published elections are locked for editing.
         $election = Election::factory()->create(['created_by' => $this->admin->id]);
 
         $response = $this->actingAs($this->admin)
-            ->putJson("/api/elections/{$election->id}", ['status' => 'open']);
+            ->putJson("/api/elections/{$election->id}", ['title' => 'Updated title']);
 
+        // Status is derived: a draft (unpublished) election reports 'draft'.
         $response->assertOk()
-            ->assertJson(['election' => ['status' => 'open']]);
+            ->assertJsonPath('election.title', 'Updated title')
+            ->assertJsonPath('election.status', 'draft');
     }
 
     public function test_voter_sees_only_active_elections(): void
     {
-        // Active election (within time window)
+        // Active election: published and within its voting window.
         Election::factory()->create([
             'status' => ElectionStatus::OPEN,
+            'published_at' => now(),
             'start_time' => now()->subDay(),
             'end_time' => now()->addDay(),
         ]);

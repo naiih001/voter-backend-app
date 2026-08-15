@@ -1,7 +1,4 @@
-/* ============================================================
-   UniVote EVS — Shared Stylesheet
-   Rich color · System dark mode · Responsive
-   ============================================================ */
+/* Tailwind component layer for the existing vanilla SPA class API. */
 
 /* === Design Tokens (Light) === */
 :root {
@@ -350,6 +347,34 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
 }
 .input-wrapper .form-input { padding-left: 38px; }
+.input-wrapper .password-input,
+.password-wrapper .password-input {
+  padding-right: 48px;
+}
+.password-wrapper .password-input { padding-left: 14px; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+.password-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-inset);
+}
+.password-toggle:active { transform: translateY(-50%) scale(.97); }
 .form-footer {
   display: flex;
   justify-content: space-between;
