@@ -338,6 +338,7 @@ a:hover { text-decoration: underline; }
   gap: 16px;
 }
 .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.election-window-hint { margin: 4px 0 12px; }
 .input-wrapper { position: relative; }
 .input-wrapper .input-icon {
   position: absolute;
@@ -1190,6 +1191,7 @@ a:hover { text-decoration: underline; }
   .navbar { padding: 0 16px; }
   .stat-card { min-height: 120px; padding: 16px; }
   .candidate-card-header { height: 160px; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
 }
 
 /* Desktop large — constrain width */

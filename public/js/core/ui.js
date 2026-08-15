@@ -213,9 +213,9 @@ export function emptyState(message = 'Nothing here yet.') {
 /* ---------- Date / formatting (ported) ---------- */
 
 export function formatDate(dateString) {
-  if (!dateString) return '—';
+  if (!dateString) return '';
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '—';
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
