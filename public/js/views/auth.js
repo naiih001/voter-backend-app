@@ -27,20 +27,55 @@ function bindTabs(root) {
   root.querySelectorAll('.tabs').forEach((tabsContainer) => {
     const tabs = tabsContainer.querySelectorAll('.tab');
     tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        const panel = tabsContainer.parentElement.querySelector(`.tab-panel[data-tab="${target}"]`);
-        tabsContainer.parentElement.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
-        if (panel) panel.classList.add('active');
+      const activate = (target, moveFocus = false) => {
+        tabs.forEach((t) => {
+          const isActive = t.dataset.tab === target;
+          t.classList.toggle('active', isActive);
+          t.setAttribute('aria-selected', String(isActive));
+          t.tabIndex = isActive ? 0 : -1;
+        });
+
+        tabsContainer.parentElement.querySelectorAll('.tab-panel').forEach((panel) => {
+          const isActive = panel.dataset.tab === target;
+          panel.classList.toggle('active', isActive);
+          panel.hidden = !isActive;
+        });
+
+        if (moveFocus) {
+          tabsContainer.querySelector(`.tab[data-tab="${target}"]`)?.focus();
+        }
+      };
+
+      tab.addEventListener('click', () => activate(tab.dataset.tab));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const currentIndex = [...tabs].indexOf(tab);
+        const nextIndex = event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? tabs.length - 1
+            : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        activate(tabs[nextIndex].dataset.tab, true);
       });
     });
+
+    const activeTab = tabsContainer.querySelector('.tab.active') || tabs[0];
+    if (activeTab) {
+      tabsContainer.setAttribute('role', 'tablist');
+      activeTab.click();
+    }
   });
 }
 
-async function finishLogin(res, btn, alertEl) {
+async function finishLogin(res, btn, alertEl, expectedRole = null) {
   if (res?.ok) {
+    if (expectedRole && res.data.user?.role !== expectedRole) {
+      ui.showAlert(alertEl, 'This account is not an administrator. Use the Student sign-in tab or an administrator account.');
+      btn.disabled = false;
+      btn.innerHTML = `${LOCK_SVG} Secure Login`;
+      return;
+    }
     api.setToken(res.data.token);
     store.setUser(res.data.user);
     const role = res.data.user?.role;
@@ -57,7 +92,12 @@ export async function login(params, root) {
   root.style.marginTop = '80px';
 
   root.innerHTML = authShell(`
-    <div class="tab-panel active" data-tab="student" style="margin-top: 20px;">
+    <div class="tabs" role="tablist" aria-label="Account type">
+      <button class="tab active" id="student-login-tab" type="button" role="tab" aria-selected="true" aria-controls="student-login-panel" data-tab="student">Student</button>
+      <button class="tab" id="admin-login-tab" type="button" role="tab" aria-selected="false" aria-controls="admin-login-panel" data-tab="admin" tabindex="-1">Administrator</button>
+    </div>
+
+    <div class="tab-panel active" id="student-login-panel" role="tabpanel" aria-labelledby="student-login-tab" data-tab="student" style="margin-top: 20px;">
       <div class="info-banner">
         ${SHIELD_SVG}<span>Secure 256-bit Encrypted Session</span>
       </div>
@@ -84,7 +124,7 @@ export async function login(params, root) {
       </form>
     </div>
 
-    <div class="tab-panel" data-tab="admin" style="margin-top: 20px;">
+    <div class="tab-panel" id="admin-login-panel" role="tabpanel" aria-labelledby="admin-login-tab" data-tab="admin" style="margin-top: 20px;" hidden>
       <div class="info-banner">
         ${SHIELD_SVG}<span>Secure 256-bit Encrypted Session</span>
       </div>
@@ -147,7 +187,7 @@ export async function login(params, root) {
     btn.innerHTML = '<span class="spinner"></span> Signing in…';
     ui.hideAlert(alertEl);
     const res = await api.post('/login', { email, password }, false);
-    await finishLogin(res, btn, alertEl);
+    await finishLogin(res, btn, alertEl, 'admin');
   });
 }
 
