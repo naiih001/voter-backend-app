@@ -79,7 +79,9 @@ async function finishLogin(res, btn, alertEl, expectedRole = null) {
     api.setToken(res.data.token);
     store.setUser(res.data.user);
     const role = res.data.user?.role;
-    navigate(role === 'admin' ? '/admin' : '/dashboard');
+    const returnPath = sessionStorage.getItem('uv_return_path');
+    sessionStorage.removeItem('uv_return_path');
+    navigate(returnPath || (role === 'admin' ? '/admin' : '/dashboard'));
   } else {
     ui.showAlert(alertEl, res?.data?.message || 'Invalid credentials. Please try again.');
     btn.disabled = false;

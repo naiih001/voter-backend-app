@@ -103,6 +103,13 @@ class UserController extends Controller
         if ($user->id === request()->user()->id || ($user->isAdmin() && User::where('role', 'admin')->count() <= 1)) {
             return response()->json(['message' => 'This administrator cannot be removed.'], 409);
         }
+
+        if ($user->electionsCreated()->exists()) {
+            return response()->json([
+                'message' => 'This administrator cannot be deleted because they created one or more elections and must remain for record keeping.',
+            ], 409);
+        }
+
         $name = $user->name;
         $user->delete();
         AuditLog::create(['user_id' => auth('sanctum')->id(), 'action' => "Deleted user: {$name}"]);

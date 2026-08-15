@@ -4,6 +4,19 @@ import { navigate } from '../../core/router.js';
 
 const STATUS_CLASS = { draft: 'orange', scheduled: 'blue', open: 'green', closed: 'red' };
 
+function localDateTimeValue(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function defaultVotingWindow() {
+  const start = new Date();
+  start.setSeconds(0, 0);
+  start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start: localDateTimeValue(start), end: localDateTimeValue(end) };
+}
+
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
@@ -52,7 +65,7 @@ export async function detail(params, root) {
   const readiness = election.readiness || { ready: false, checks: [] };
   workspace.innerHTML = `
     <a href="/admin/elections" class="link-blue">Back to elections</a>
-    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div>
+    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><div class="election-actions">${election.status !== 'draft' ? '<button class="btn-outline" id="share-election">Share election</button>' : ''}<span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div></div>
     ${docket(election)}
     <nav class="workspace-tabs" aria-label="Election workspace"><a href="#overview" class="active">Overview</a><a href="#ballot">Ballot</a><a href="#schedule">Schedule</a><a href="/admin/elections/${election.id}/results">Results</a></nav>
     <section id="overview" class="mt-24"><div class="card"><div class="flex-between"><h2 class="section-title">Publication readiness</h2>${lifecycleButton(election)}</div>
@@ -63,6 +76,13 @@ export async function detail(params, root) {
       <p class="mt-16"><strong>Starts</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.start_time))}</span></p><p class="mt-16"><strong>Ends</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.end_time))}</span></p></section>`;
 
   workspace.querySelector('#publish-election')?.addEventListener('click', () => lifecycle(election, 'publish'));
+  workspace.querySelector('#share-election')?.addEventListener('click', () => {
+    ui.shareLink({
+      title: election.title,
+      text: election.description || 'View this election on UniVote EVS.',
+      url: `${location.origin}/elections/${election.id}`,
+    });
+  });
   workspace.querySelector('#unpublish-election')?.addEventListener('click', () => lifecycle(election, 'unpublish'));
   workspace.querySelector('#edit-election')?.addEventListener('click', () => electionEditor(election));
   workspace.querySelector('#add-position')?.addEventListener('click', () => positionEditor(election));
@@ -95,12 +115,32 @@ async function lifecycle(election, action) {
 function electionEditor(election = null) {
   const title = ui.field.text({ label: 'Election title', value: election?.title || '', placeholder: 'Student Union Election 2026' });
   const description = ui.field.textarea({ label: 'Description', value: election?.description || '' });
-  const start = ui.field.text({ label: 'Voting starts', type: 'datetime-local', value: election ? ui.toLocalInput(election.start_time) : '' });
-  const end = ui.field.text({ label: 'Voting ends', type: 'datetime-local', value: election ? ui.toLocalInput(election.end_time) : '' });
-  const body = ui.el('div', {}, title.node, description.node, start.node, end.node);
+  const defaults = defaultVotingWindow();
+  const startValue = election ? ui.toLocalInput(election.start_time) : defaults.start;
+  const endValue = election ? ui.toLocalInput(election.end_time) : defaults.end;
+  const startDate = ui.field.text({ label: 'Start date', type: 'date', value: startValue.slice(0, 10) });
+  const startTime = ui.field.text({ label: 'Start time', type: 'time', value: startValue.slice(11, 16) });
+  const endDate = ui.field.text({ label: 'End date', type: 'date', value: endValue.slice(0, 10) });
+  const endTime = ui.field.text({ label: 'End time', type: 'time', value: endValue.slice(11, 16) });
+  const body = ui.el('div', {},
+    title.node,
+    description.node,
+    ui.el('p', { class: 'form-hint election-window-hint' }, 'Choose when voting opens and closes.'),
+    ui.el('div', { class: 'form-row' }, startDate.node, startTime.node),
+    ui.el('div', { class: 'form-row' }, endDate.node, endTime.node)
+  );
   const modal = ui.openModal({ title: election ? 'Edit election' : 'Create election', body, actions: [{ label: 'Cancel', class: 'btn-outline', onClick: ui.closeModal }, { label: election ? 'Save changes' : 'Create draft', class: 'btn-primary', onClick: () => {} }] });
   modal.actionsNode.querySelector('.btn-primary').addEventListener('click', async () => {
-    const payload = { title: title.value(), description: description.value(), start_time: ui.toBackendDate(start.value()), end_time: ui.toBackendDate(end.value()) };
+    if (![startDate, startTime, endDate, endTime].every((field) => field.value())) {
+      ui.toast('Choose both a date and time for the voting window.', 'error');
+      return;
+    }
+    const payload = {
+      title: title.value(),
+      description: description.value(),
+      start_time: ui.toBackendDate(`${startDate.value()}T${startTime.value()}`),
+      end_time: ui.toBackendDate(`${endDate.value()}T${endTime.value()}`),
+    };
     const response = election ? await api.put(`/elections/${election.id}`, payload) : await api.post('/elections', payload);
     if (!response.ok) { ui.toast(response.data?.message || 'Election could not be saved.', 'error'); return; }
     ui.closeModal(); ui.toast(election ? 'Election updated.' : 'Draft created.', 'success');

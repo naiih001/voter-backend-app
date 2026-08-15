@@ -20,6 +20,9 @@ Route::get('/health', function () {
     ]);
 });
 
+// Published election details are shareable and read-only for guests.
+Route::get('/elections/{election}', [ElectionController::class, 'show']);
+
 // Authenticated routes
 Route::middleware('auth:sanctum')->group(function () {
     // Current user
@@ -28,7 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Elections — voters see open, admins see all (handled in controller)
     Route::get('/elections', [ElectionController::class, 'index']);
-    Route::get('/elections/{election}', [ElectionController::class, 'show']);
     Route::get('/elections/{election}/positions', [PositionController::class, 'byElection']);
     Route::get('/elections/{election}/results', [ElectionController::class, 'results']);
 

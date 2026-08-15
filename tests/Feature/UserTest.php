@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Election;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -181,6 +182,20 @@ class UserTest extends TestCase
             ->assertJson(['message' => 'User deleted.']);
 
         $this->assertDatabaseMissing('users', ['id' => $this->voter->id]);
+    }
+
+    public function test_admin_cannot_delete_user_who_created_an_election(): void
+    {
+        $owner = User::factory()->admin()->create();
+        Election::factory()->create(['created_by' => $owner->id]);
+
+        $response = $this->actingAs($this->admin)
+            ->deleteJson("/api/users/{$owner->id}");
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'message' => 'This administrator cannot be deleted because they created one or more elections and must remain for record keeping.',
+            ]);
     }
 
     public function test_voter_cannot_delete_user(): void
