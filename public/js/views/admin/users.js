@@ -9,8 +9,8 @@ import { ui } from '../../core/ui.js';
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
-    <div class="flex-between mt-32"><div><h1 class="page-title">Users</h1><p class="page-subtitle">Manage voter and administrator accounts.</p></div><button class="btn-primary" id="create-admin">Add administrator</button></div>
-    <div id="users-table" class="card mt-24" style="padding:0;"></div>`;
+    <div class="page-header mt-32"><div><h1 class="page-title">Users</h1><p class="page-subtitle">Manage voter and administrator accounts.</p></div><button class="btn-primary" id="create-admin">Add administrator</button></div>
+    <div id="users-table" class="card responsive-table-card mt-24" style="padding:0;"></div>`;
 
   const tableEl = root.querySelector('#users-table');
   tableEl.appendChild(ui.loadingBlock('Loading users…'));
@@ -44,17 +44,17 @@ export async function view(params, root) {
     }
     tableEl.innerHTML = `
       <div class="table-wrap">
-        <table class="table">
+        <table class="table responsive-table">
           <thead><tr><th>Name</th><th>Email</th><th>Matric</th><th>Role</th><th>Eligible</th><th style="text-align:right;">Actions</th></tr></thead>
           <tbody>
             ${users.map((u) => `
               <tr data-id="${u.id}">
-                <td><strong>${ui.escapeHtml(u.name)}</strong></td>
-                <td class="text-muted">${ui.escapeHtml(u.email)}</td>
-                <td class="text-muted">${ui.escapeHtml(u.matric_number || '—')}</td>
-                <td><span class="badge-pill ${u.role === 'admin' ? 'blue' : 'green'}">${ui.escapeHtml(u.role)}</span></td>
-                <td><span class="badge-pill ${u.is_eligible ? 'green' : 'red'}">${u.is_eligible ? 'Eligible' : 'Not Eligible'}</span></td>
-                <td style="text-align:right;white-space:nowrap;">
+                <td data-label="Name"><strong>${ui.escapeHtml(u.name)}</strong></td>
+                <td data-label="Email" class="text-muted">${ui.escapeHtml(u.email)}</td>
+                <td data-label="Matric" class="text-muted">${ui.escapeHtml(u.matric_number || '—')}</td>
+                <td data-label="Role"><span class="badge-pill ${u.role === 'admin' ? 'blue' : 'green'}">${ui.escapeHtml(u.role)}</span></td>
+                <td data-label="Eligible"><span class="badge-pill ${u.is_eligible ? 'green' : 'red'}">${u.is_eligible ? 'Eligible' : 'Not Eligible'}</span></td>
+                <td data-label="Actions" class="table-actions">
                   <button class="btn-pill act-edit">Edit</button>
                   <button class="btn-pill act-delete" ${String(u.id) === String(currentId) ? 'disabled style="opacity:.5;cursor:not-allowed;"' : ''}>Delete</button>
                 </td>

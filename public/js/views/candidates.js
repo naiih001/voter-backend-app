@@ -15,7 +15,7 @@ export async function view(params, root) {
     <h1 class="page-title mt-32">Candidate Directory</h1>
     <p class="page-subtitle" style="max-width:600px;">Review the profiles and manifestos of all candidates standing for election. Ensure you are informed before casting your ballot.</p>
     <div class="alert" id="candidates-alert" style="display:none;"></div>
-    <div class="flex-between mt-24">
+    <div class="toolbar mt-24">
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-pill active filter-pill" data-position="all">All Positions</button>
         <div id="position-filters"></div>

@@ -68,7 +68,7 @@ export async function detail(params, root) {
   container.innerHTML = `
     <h1 class="page-title">${ui.escapeHtml(election.title)}</h1>
     <p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p>
-    <div class="flex-between mt-16">
+    <div class="detail-toolbar mt-16">
       <span class="btn-pill" style="cursor:default;">${positions.length} positions</span>
       <div class="election-actions">
         <button class="btn-outline" id="share-election">Share election</button>
@@ -105,7 +105,7 @@ export async function detail(params, root) {
     <div class="card" style="margin-bottom:16px;">
       <h3 class="section-title">${ui.escapeHtml(p.title)}</h3>
       <p class="text-muted" style="font-size:.8125rem;">${ui.escapeHtml(p.description || '')}</p>
-      <div class="candidate-grid" style="margin-top:16px;grid-template-columns:repeat(4,1fr);">
+      <div class="candidate-grid detail-candidate-grid">
         ${(p.candidates || []).map((c, ci) => `
           <div class="candidate-card">
             <div class="candidate-card-header" style="background:${avatarBg(pi + ci)};">

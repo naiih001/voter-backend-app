@@ -10,7 +10,7 @@ export async function view(params, root) {
   root.innerHTML = `
     <h1 class="page-title mt-32">Audit Log</h1>
     <p class="page-subtitle">A record of administrative actions across the system.</p>
-    <div class="flex-between mt-16" style="gap:16px;flex-wrap:wrap;">
+    <div class="toolbar mt-16">
       <div class="search-input">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="action-filter" class="candidate-search" placeholder="Filter by action…">
@@ -20,7 +20,7 @@ export async function view(params, root) {
         <input type="text" id="user-filter" class="candidate-search" placeholder="Filter by user id…">
       </div>
     </div>
-    <div id="audit-table" class="card mt-16" style="padding:0;"></div>
+    <div id="audit-table" class="card responsive-table-card mt-16" style="padding:0;"></div>
     <div class="text-center mt-16">
       <button class="btn-outline" id="load-more" style="display:none;">Load More</button>
     </div>`;
@@ -81,7 +81,7 @@ export async function view(params, root) {
     if (!tbody) {
       tableEl.innerHTML = `
         <div class="table-wrap">
-          <table class="table">
+          <table class="table responsive-table">
             <thead><tr><th>Action</th><th>User</th><th>When</th></tr></thead>
             <tbody></tbody>
           </table>
@@ -91,9 +91,9 @@ export async function view(params, root) {
 
     logs.forEach((l) => {
       const tr = ui.el('tr', {},
-        ui.el('td', {}, ui.el('strong', {}, ui.escapeHtml(l.action))),
-        ui.el('td', { class: 'text-muted' }, ui.escapeHtml(l.user?.name || `User #${l.user_id}`)),
-        ui.el('td', { class: 'text-muted' }, ui.escapeHtml(ui.formatDate(l.created_at)))
+        ui.el('td', { dataset: { label: 'Action' } }, ui.el('strong', {}, ui.escapeHtml(l.action))),
+        ui.el('td', { class: 'text-muted', dataset: { label: 'User' } }, ui.escapeHtml(l.user?.name || `User #${l.user_id}`)),
+        ui.el('td', { class: 'text-muted', dataset: { label: 'When' } }, ui.escapeHtml(ui.formatDate(l.created_at)))
       );
       tbody.appendChild(tr);
     });

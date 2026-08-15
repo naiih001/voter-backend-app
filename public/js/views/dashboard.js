@@ -25,7 +25,7 @@ export async function view(params, root) {
   const user = store.getUser();
 
   root.innerHTML = `
-    <div class="flex-between mt-32" style="align-items:flex-start;">
+    <div class="page-header mt-32 page-header-start">
       <div>
         <h1 class="page-title">Hello, <span id="user-name">${ui.escapeHtml(user?.name || '')}</span></h1>
         <p class="page-subtitle">Welcome back to the University Electronic Voting System.</p>
@@ -65,7 +65,7 @@ export async function view(params, root) {
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-top:24px;">
+    <div class="dashboard-grid mt-24">
       <div class="card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div style="width:32px;height:32px;border-radius:8px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;color:var(--blue-primary);">${ballotIcon()}</div>

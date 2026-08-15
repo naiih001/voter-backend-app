@@ -153,9 +153,18 @@ export const field = {
 
 /* ---------- Modal ---------- */
 
+let activeModalCleanup = null;
+
 export function openModal({ title, subtitle = '', body, actions = [] }) {
+  activeModalCleanup?.();
+  activeModalCleanup = null;
   const modalRoot = document.getElementById('app-modal');
-  const closeBtn = el('button', { class: 'modal-close', 'aria-label': 'Close' }, '×');
+  const closeBtn = el('button', { class: 'modal-close', 'aria-label': 'Close', type: 'button' },
+    el('svg', { width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' },
+      el('line', { x1: '6', y1: '6', x2: '18', y2: '18' }),
+      el('line', { x1: '18', y1: '6', x2: '6', y2: '18' })
+    )
+  );
 
   const header = el('div', { class: 'flex-between' },
     el('div', {},
@@ -176,7 +185,8 @@ export function openModal({ title, subtitle = '', body, actions = [] }) {
     }, a.label))
   );
 
-  const modal = el('div', { class: 'modal' }, header, bodyNode, actionsNode);
+  const modal = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'modal-title' }, header, bodyNode, actionsNode);
+  modal.querySelector('h3')?.setAttribute('id', 'modal-title');
   const overlay = el('div', { class: 'modal-overlay' }, modal);
 
   closeBtn.addEventListener('click', closeModal);
@@ -184,12 +194,40 @@ export function openModal({ title, subtitle = '', body, actions = [] }) {
 
   modalRoot.innerHTML = '';
   modalRoot.appendChild(overlay);
+  const previousFocus = document.activeElement;
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') {
+      closeModal();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...modal.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((node) => !node.disabled && node.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+  document.addEventListener('keydown', onKeydown);
+  activeModalCleanup = () => {
+    document.removeEventListener('keydown', onKeydown);
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+  };
+  closeBtn.focus();
   return { overlay, modal, bodyNode, actionsNode, close: closeModal };
 }
 
 export function closeModal() {
   const modalRoot = document.getElementById('app-modal');
   if (modalRoot) modalRoot.innerHTML = '';
+  activeModalCleanup?.();
+  activeModalCleanup = null;
 }
 
 export function confirmDialog(msg) {
@@ -279,19 +317,28 @@ export function renderNav() {
   nav.className = 'navbar';
   nav.innerHTML = '';
 
+  nav.appendChild(el('button', { class: 'hamburger', type: 'button', 'aria-label': 'Open navigation', 'aria-expanded': 'false', 'aria-controls': 'primary-navigation' },
+    el('svg', { width: '22', height: '22', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' },
+      el('line', { x1: '4', y1: '6', x2: '20', y2: '6' }),
+      el('line', { x1: '4', y1: '12', x2: '20', y2: '12' }),
+      el('line', { x1: '4', y1: '18', x2: '20', y2: '18' })
+    )
+  ));
   nav.appendChild(el('a', { href: '/', class: 'nav-logo', 'data-link': '' }, 'UniVote EVS'));
 
   if (!user) {
-    nav.appendChild(el('div', { class: 'nav-links' },
+    const links = el('div', { class: 'nav-links', id: 'primary-navigation' },
       el('a', { href: '/login', 'data-link': '', class: activeClass('/login') }, 'Login'),
       el('a', { href: '/register', 'data-link': '', class: activeClass('/register') }, 'Register'),
-    ));
+    );
+    nav.appendChild(links);
+    bindMobileNav(nav, links);
     return;
   }
 
   let links;
   if (user.role === 'admin') {
-    links = el('div', { class: 'nav-links' },
+    links = el('div', { class: 'nav-links', id: 'primary-navigation' },
       el('a', { href: '/admin', 'data-link': '', class: activeClass('/admin') }, 'Dashboard'),
       el('a', { href: '/admin/elections', 'data-link': '', class: activeClass('/admin/elections') }, 'Elections'),
       el('a', { href: '/admin/users', 'data-link': '', class: activeClass('/admin/users') }, 'Users'),
@@ -299,7 +346,7 @@ export function renderNav() {
       el('a', { href: '/dashboard', 'data-link': '', class: activeClass('/dashboard') }, 'Voter View'),
     );
   } else {
-    links = el('div', { class: 'nav-links' },
+    links = el('div', { class: 'nav-links', id: 'primary-navigation' },
       el('a', { href: '/dashboard', 'data-link': '', class: activeClass('/dashboard') }, 'Home'),
       el('a', { href: '/candidates', 'data-link': '', class: activeClass('/candidates') }, 'Candidates'),
       el('a', { href: '/vote', 'data-link': '', class: activeClass('/vote') }, 'Vote'),
@@ -307,18 +354,40 @@ export function renderNav() {
     );
   }
   nav.appendChild(links);
+  bindMobileNav(nav, links);
 
   const menu = el('div', { id: 'nav-user-menu', class: 'nav-user-menu', style: 'display:none;' },
     el('a', { href: '/profile', 'data-link': '', class: 'nav-menu-item' }, 'Profile'),
     el('button', { class: 'nav-menu-item', onClick: () => logout() }, 'Sign out'),
   );
-  const avatar = el('div', { class: 'avatar-circle', title: user.name, style: 'cursor:pointer;' }, getInitials(user.name));
+  const avatar = el('button', { class: 'avatar-circle', title: user.name, 'aria-label': `Open account menu for ${user.name}`, 'aria-expanded': 'false', type: 'button' }, getInitials(user.name));
   avatar.addEventListener('click', (e) => {
     e.stopPropagation();
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    const open = menu.style.display === 'none';
+    menu.style.display = open ? 'block' : 'none';
+    avatar.setAttribute('aria-expanded', String(open));
   });
 
   nav.appendChild(el('div', { class: 'nav-actions' }, avatar, menu));
+}
+
+function bindMobileNav(nav, links) {
+  const trigger = nav.querySelector('.hamburger');
+  if (!trigger) return;
+  const close = () => {
+    links.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-label', 'Open navigation');
+  };
+  trigger.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !links.classList.contains('open');
+    links.classList.toggle('open', open);
+    trigger.setAttribute('aria-expanded', String(open));
+    trigger.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+  });
+  links.querySelectorAll('a').forEach((link) => link.addEventListener('click', close));
+  nav.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
 }
 
 // Close the user menu on any outside click (bound once).
@@ -326,6 +395,15 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', () => {
     const m = document.getElementById('nav-user-menu');
     if (m) m.style.display = 'none';
+    const avatar = document.querySelector('.avatar-circle[aria-expanded]');
+    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+    const links = document.getElementById('primary-navigation');
+    const trigger = document.querySelector('.hamburger');
+    if (links && trigger) {
+      links.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.setAttribute('aria-label', 'Open navigation');
+    }
   });
 }
 
