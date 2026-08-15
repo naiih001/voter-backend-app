@@ -9,9 +9,9 @@ export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
     <a href="/admin/elections" data-link class="link-blue mt-32" style="display:inline-block;">← Elections</a>
-    <div class="flex-between mt-16" style="align-items:flex-end;">
+    <div class="page-header mt-16 page-header-end">
       <h1 class="page-title">Election Results</h1>
-      <div class="form-group" style="margin-bottom:0;min-width:280px;">
+      <div class="form-group responsive-select" style="margin-bottom:0;">
         <label class="form-label">Select election</label>
         <select class="form-input" id="results-election"></select>
       </div>

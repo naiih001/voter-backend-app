@@ -28,7 +28,7 @@ Admins prepare scheduled elections in advance; voters review candidates and cast
 
 ## Capabilities and Constraints
 
-Laravel 13 API, Sanctum authentication, PostgreSQL, vanilla SPA with no build step. Existing vote uniqueness and audit logging remain authoritative.
+Laravel 13 API, Sanctum authentication, PostgreSQL, and a vanilla ES-module SPA styled with Tailwind CSS. Existing vote uniqueness and audit logging remain authoritative.
 
 ## Brand Commitments
 

@@ -20,14 +20,14 @@ function defaultVotingWindow() {
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
-    <div class="flex-between mt-32">
+    <div class="page-header mt-32">
       <div><h1 class="page-title">Election office</h1><p class="page-subtitle">Prepare, publish, and review every university election from one place.</p></div>
       <button class="btn-primary" id="create-election">New election</button>
     </div>
     <div class="docket-rail mt-24">
       ${['Draft', 'Scheduled', 'Voting open', 'Results ready'].map((label) => `<div class="docket-step"><strong>Lifecycle</strong><span>${label}</span></div>`).join('')}
     </div>
-    <div id="election-list" class="card mt-24" style="padding:0"></div>`;
+    <div id="election-list" class="card responsive-table-card mt-24" style="padding:0"></div>`;
 
   root.querySelector('#create-election').addEventListener('click', () => electionEditor());
   const list = root.querySelector('#election-list');
@@ -42,11 +42,11 @@ export async function view(params, root) {
     list.appendChild(ui.emptyState('No elections yet. Create a draft to begin.'));
     return;
   }
-  list.innerHTML = `<div class="table-wrap"><table class="table"><thead><tr><th>Election</th><th>Window</th><th>Ballot</th><th>Status</th><th></th></tr></thead><tbody>${response.data.map((e) => `
-    <tr><td><strong>${ui.escapeHtml(e.title)}</strong><div class="text-muted">${ui.escapeHtml(e.description || 'No description')}</div></td>
-    <td class="text-muted">${ui.escapeHtml(ui.formatDate(e.start_time))}<br>${ui.escapeHtml(ui.formatDate(e.end_time))}</td>
-    <td>${e.positions_count || 0} positions</td><td><span class="badge-pill ${STATUS_CLASS[e.status] || ''}">${ui.escapeHtml(e.status)}</span></td>
-    <td style="text-align:right"><button class="btn-outline manage-election" data-id="${e.id}">Manage</button></td></tr>`).join('')}</tbody></table></div>`;
+  list.innerHTML = `<div class="table-wrap"><table class="table responsive-table"><thead><tr><th>Election</th><th>Window</th><th>Ballot</th><th>Status</th><th></th></tr></thead><tbody>${response.data.map((e) => `
+    <tr><td data-label="Election"><strong>${ui.escapeHtml(e.title)}</strong><div class="text-muted">${ui.escapeHtml(e.description || 'No description')}</div></td>
+    <td data-label="Window" class="text-muted">${ui.escapeHtml(ui.formatDate(e.start_time))}<br>${ui.escapeHtml(ui.formatDate(e.end_time))}</td>
+    <td data-label="Ballot">${e.positions_count || 0} positions</td><td data-label="Status"><span class="badge-pill ${STATUS_CLASS[e.status] || ''}">${ui.escapeHtml(e.status)}</span></td>
+    <td data-label="Actions" class="table-actions"><button class="btn-outline manage-election" data-id="${e.id}">Manage</button></td></tr>`).join('')}</tbody></table></div>`;
   list.querySelectorAll('.manage-election').forEach((button) => button.addEventListener('click', () => navigate(`/admin/elections/${button.dataset.id}`)));
 }
 
@@ -65,14 +65,14 @@ export async function detail(params, root) {
   const readiness = election.readiness || { ready: false, checks: [] };
   workspace.innerHTML = `
     <a href="/admin/elections" class="link-blue">Back to elections</a>
-    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><div class="election-actions">${election.status !== 'draft' ? '<button class="btn-outline" id="share-election">Share election</button>' : ''}<span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div></div>
+    <div class="page-header mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><div class="election-actions">${election.status !== 'draft' ? '<button class="btn-outline" id="share-election">Share election</button>' : ''}<span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div></div>
     ${docket(election)}
     <nav class="workspace-tabs" aria-label="Election workspace"><a href="#overview" class="active">Overview</a><a href="#ballot">Ballot</a><a href="#schedule">Schedule</a><a href="/admin/elections/${election.id}/results">Results</a></nav>
-    <section id="overview" class="mt-24"><div class="card"><div class="flex-between"><h2 class="section-title">Publication readiness</h2>${lifecycleButton(election)}</div>
+    <section id="overview" class="mt-24"><div class="card"><div class="section-header"><h2 class="section-title">Publication readiness</h2>${lifecycleButton(election)}</div>
       <div class="mt-16">${readiness.checks.map((check) => `<div class="announcement-item"><strong>${check.passed ? 'Ready' : 'Needs attention'}</strong><p class="text-muted">${ui.escapeHtml(check.label)}</p></div>`).join('')}</div></div></section>
-    <section id="ballot" class="mt-32"><div class="flex-between"><div><h2 class="section-title">Ballot structure</h2><p class="page-subtitle">Positions and candidates are locked after publication.</p></div>${election.status === 'draft' ? '<button class="btn-primary" id="add-position">Add position</button>' : ''}</div>
+    <section id="ballot" class="mt-32"><div class="section-header"><div><h2 class="section-title">Ballot structure</h2><p class="page-subtitle">Positions and candidates are locked after publication.</p></div>${election.status === 'draft' ? '<button class="btn-primary" id="add-position">Add position</button>' : ''}</div>
       <div class="mt-16" id="position-list">${positions.length ? positions.map((position) => positionBlock(position, election)).join('') : '<div class="card"><p class="text-muted">No positions yet.</p></div>'}</div></section>
-    <section id="schedule" class="mt-32 card"><div class="flex-between"><div><h2 class="section-title">Voting window</h2><p class="page-subtitle">Opening and closing happen automatically.</p></div>${election.status === 'draft' ? '<button class="btn-outline" id="edit-election">Edit details</button>' : ''}</div>
+    <section id="schedule" class="mt-32 card"><div class="section-header"><div><h2 class="section-title">Voting window</h2><p class="page-subtitle">Opening and closing happen automatically.</p></div>${election.status === 'draft' ? '<button class="btn-outline" id="edit-election">Edit details</button>' : ''}</div>
       <p class="mt-16"><strong>Starts</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.start_time))}</span></p><p class="mt-16"><strong>Ends</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.end_time))}</span></p></section>`;
 
   workspace.querySelector('#publish-election')?.addEventListener('click', () => lifecycle(election, 'publish'));
@@ -102,7 +102,7 @@ function lifecycleButton(election) {
 }
 
 function positionBlock(position, election) {
-  return `<div class="card" style="margin-bottom:12px"><div class="flex-between"><div><h3 class="section-title">${ui.escapeHtml(position.title)}</h3><p class="text-muted">${ui.escapeHtml(position.description || 'No description')}</p></div>${election.status === 'draft' ? `<button class="btn-outline add-candidate" data-position="${position.id}">Add candidate</button>` : ''}</div>
+  return `<div class="card" style="margin-bottom:12px"><div class="section-header"><div><h3 class="section-title">${ui.escapeHtml(position.title)}</h3><p class="text-muted">${ui.escapeHtml(position.description || 'No description')}</p></div>${election.status === 'draft' ? `<button class="btn-outline add-candidate" data-position="${position.id}">Add candidate</button>` : ''}</div>
     <div class="mt-16">${position.candidates?.length ? position.candidates.map((candidate) => `<div class="announcement-item"><strong>${ui.escapeHtml(candidate.name)}</strong><p class="text-muted">${ui.escapeHtml(candidate.matric_number || 'No matric number')} · ${ui.escapeHtml(candidate.manifesto || 'No manifesto')}</p></div>`).join('') : '<p class="text-muted">No candidates yet.</p>'}</div></div>`;
 }
 

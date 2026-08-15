@@ -11,6 +11,23 @@ const LOCK_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 const USER_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
 const CARD_SVG = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>`;
 const SHIELD_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`;
+const EYE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 010-.696 10.75 10.75 0 0119.876 0 1 1 0 010 .696 10.75 10.75 0 01-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M6.71 6.71C4.9 7.84 3.55 9.58 2.62 11.55a1 1 0 000 .9C4.38 16.17 7.57 19 12 19c1.38 0 2.63-.28 3.75-.77"/><path d="M10.73 5.08A9.8 9.8 0 0112 5c4.43 0 7.62 2.83 9.38 6.55a1 1 0 010 .9 12.6 12.6 0 01-2.12 3.19"/><path d="M14.12 14.12A3 3 0 019.88 9.88"/></svg>`;
+
+function bindPasswordToggles(root) {
+  root.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = root.querySelector(`#${button.dataset.passwordToggle}`);
+    if (!input) return;
+
+    button.addEventListener('click', () => {
+      const isVisible = input.type === 'text';
+      input.type = isVisible ? 'password' : 'text';
+      button.setAttribute('aria-pressed', String(!isVisible));
+      button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+      button.innerHTML = isVisible ? EYE_SVG : EYE_OFF_SVG;
+    });
+  });
+}
 
 function authShell(innerHtml) {
   return `
@@ -115,7 +132,8 @@ export async function login(params, root) {
           <label class="form-label">Password</label>
           <div class="input-wrapper">
             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-            <input type="password" id="student-password" class="form-input" placeholder="Enter your password" required>
+            <input type="password" id="student-password" class="form-input password-input" placeholder="Enter your password" required>
+            <button type="button" class="password-toggle" data-password-toggle="student-password" aria-label="Show password" aria-pressed="false">${EYE_SVG}</button>
           </div>
         </div>
         <div class="form-footer">
@@ -142,7 +160,8 @@ export async function login(params, root) {
           <label class="form-label">Password</label>
           <div class="input-wrapper">
             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-            <input type="password" id="admin-password" class="form-input" placeholder="Enter your password" required>
+            <input type="password" id="admin-password" class="form-input password-input" placeholder="Enter your password" required>
+            <button type="button" class="password-toggle" data-password-toggle="admin-password" aria-label="Show password" aria-pressed="false">${EYE_SVG}</button>
           </div>
         </div>
         <div class="form-footer">
@@ -157,6 +176,7 @@ export async function login(params, root) {
   root.insertAdjacentHTML('beforeend', '<p class="auth-card-footer mt-16">Not registered for this election? <a href="/register" data-link>Create an account</a></p>');
 
   bindTabs(root);
+  bindPasswordToggles(root);
 
   const alertEl = root.querySelector('#auth-alert');
 
@@ -251,11 +271,17 @@ export async function register(params, root) {
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" id="student-password" class="form-input" placeholder="Min. 8 characters" required>
+            <div class="input-wrapper password-wrapper">
+              <input type="password" id="student-password" class="form-input password-input" placeholder="Min. 8 characters" required>
+              <button type="button" class="password-toggle" data-password-toggle="student-password" aria-label="Show password" aria-pressed="false">${EYE_SVG}</button>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Confirm Password</label>
-            <input type="password" id="student-password-confirm" class="form-input" placeholder="Re-enter password" required>
+            <div class="input-wrapper password-wrapper">
+              <input type="password" id="student-password-confirm" class="form-input password-input" placeholder="Re-enter password" required>
+              <button type="button" class="password-toggle" data-password-toggle="student-password-confirm" aria-label="Show password" aria-pressed="false">${EYE_SVG}</button>
+            </div>
           </div>
         </div>
         <button type="submit" id="student-register-btn" class="btn-primary" style="width: 100%; margin-top: 16px;">Create Account</button>
@@ -268,6 +294,7 @@ export async function register(params, root) {
   root.insertAdjacentHTML('beforeend', '<p class="auth-card-footer mt-16">Already have an account? <a href="/login" data-link>Sign in</a></p>');
 
   const alertEl = root.querySelector('#auth-alert');
+  bindPasswordToggles(root);
 
   root.querySelector('#student-register-form').addEventListener('submit', async (e) => {
     e.preventDefault();

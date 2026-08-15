@@ -8,14 +8,14 @@ import { ui } from '../../core/ui.js';
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
-    <div class="flex-between mt-32">
+    <div class="page-header mt-32">
       <div>
         <h1 class="page-title">Positions</h1>
         <p class="page-subtitle">Manage the positions contestants can run for.</p>
       </div>
       <button class="btn-primary" id="create-btn">+ New Position</button>
     </div>
-    <div id="positions-table" class="card mt-24" style="padding:0;"></div>`;
+    <div id="positions-table" class="card responsive-table-card mt-24" style="padding:0;"></div>`;
 
   const tableEl = root.querySelector('#positions-table');
   tableEl.appendChild(ui.loadingBlock('Loading positions…'));
@@ -41,15 +41,15 @@ export async function view(params, root) {
     }
     tableEl.innerHTML = `
       <div class="table-wrap">
-        <table class="table">
+        <table class="table responsive-table">
           <thead><tr><th>Title</th><th>Election</th><th>Candidates</th><th style="text-align:right;">Actions</th></tr></thead>
           <tbody>
             ${positions.map((p) => `
               <tr data-id="${p.id}">
-                <td><strong>${ui.escapeHtml(p.title)}</strong>${p.description ? `<div class="text-muted" style="font-size:.8125rem;">${ui.escapeHtml(p.description.slice(0, 80))}</div>` : ''}</td>
-                <td class="text-muted">${ui.escapeHtml(p.election?.title || '—')}</td>
-                <td>${p.candidates_count || 0}</td>
-                <td style="text-align:right;white-space:nowrap;">
+                <td data-label="Title"><strong>${ui.escapeHtml(p.title)}</strong>${p.description ? `<div class="text-muted" style="font-size:.8125rem;">${ui.escapeHtml(p.description.slice(0, 80))}</div>` : ''}</td>
+                <td data-label="Election" class="text-muted">${ui.escapeHtml(p.election?.title || '—')}</td>
+                <td data-label="Candidates">${p.candidates_count || 0}</td>
+                <td data-label="Actions" class="table-actions">
                   <button class="btn-pill act-edit">Edit</button>
                   <button class="btn-pill act-delete">Delete</button>
                 </td>

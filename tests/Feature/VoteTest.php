@@ -16,9 +16,13 @@ class VoteTest extends TestCase
     use RefreshDatabase;
 
     private Election $election;
+
     private Position $position;
+
     private Candidate $alice;
+
     private Candidate $bob;
+
     private User $voter;
 
     protected function setUp(): void
@@ -88,6 +92,47 @@ class VoteTest extends TestCase
         ]);
 
         $response->assertUnprocessable();
+
+        $this->assertDatabaseCount('votes', 1);
+        $this->assertDatabaseHas('votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+            'voter_id' => $this->voter->id,
+        ]);
+    }
+
+    public function test_voter_can_vote_once_for_each_different_position(): void
+    {
+        $otherPosition = $this->election->positions()->create(['title' => 'Vice President']);
+        $otherCandidate = $otherPosition->candidates()->create(['name' => 'Charlie']);
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+        ])->assertCreated();
+
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $otherPosition->id,
+            'candidate_id' => $otherCandidate->id,
+        ])->assertCreated();
+
+        $this->assertDatabaseCount('votes', 2);
+    }
+
+    public function test_eligibility_is_false_after_voting_for_position(): void
+    {
+        $this->actingAs($this->voter)->postJson('/api/votes', [
+            'position_id' => $this->position->id,
+            'candidate_id' => $this->alice->id,
+        ])->assertCreated();
+
+        $this->actingAs($this->voter)
+            ->getJson("/api/eligibility?position_id={$this->position->id}")
+            ->assertOk()
+            ->assertJson([
+                'eligible' => false,
+                'reason' => 'Already voted for this position.',
+            ]);
     }
 
     public function test_cannot_vote_for_wrong_position(): void

@@ -1,7 +1,4 @@
-/* ============================================================
-   UniVote EVS — Shared Stylesheet
-   Rich color · System dark mode · Responsive
-   ============================================================ */
+/* Tailwind component layer for the existing vanilla SPA class API. */
 
 /* === Design Tokens (Light) === */
 :root {
@@ -350,6 +347,34 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
 }
 .input-wrapper .form-input { padding-left: 38px; }
+.input-wrapper .password-input,
+.password-wrapper .password-input {
+  padding-right: 48px;
+}
+.password-wrapper .password-input { padding-left: 14px; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+.password-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-inset);
+}
+.password-toggle:active { transform: translateY(-50%) scale(.97); }
 .form-footer {
   display: flex;
   justify-content: space-between;
@@ -939,7 +964,6 @@ a:hover { text-decoration: underline; }
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--blue-primary), var(--teal-accent));
-  transition: width 0.4s ease;
 }
 
 /* === Empty states === */
@@ -1307,4 +1331,190 @@ a { color: var(--blue-primary); text-underline-offset: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* ============================================================
+   Responsive operating layer
+   ============================================================ */
+html { min-width: 320px; overflow-x: hidden; }
+body { min-height: 100vh; overflow-x: hidden; }
+img, svg { max-width: 100%; }
+button, input, select, textarea { font: inherit; }
+.page-title, .section-title, .page-subtitle, .text-muted, td, th { overflow-wrap: anywhere; }
+
+.page-header,
+.section-header,
+.toolbar,
+.ballot-actions,
+.detail-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.page-header-start { align-items: flex-start; }
+.page-header-end,
+.section-header-end { align-items: flex-end; }
+.toolbar { flex-wrap: wrap; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 24px; }
+.responsive-select { min-width: min(280px, 100%); }
+.detail-candidate-grid { margin-top: 16px; }
+.table-actions { text-align: right; white-space: nowrap; }
+.responsive-copy { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar-circle { border: 0; padding: 0; font-family: var(--font); }
+.hamburger { color: #F4F8F5; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
+
+@media (hover: hover) and (pointer: fine) {
+  .candidate-card:hover,
+  .stat-card:hover { transform: translateY(-2px); }
+}
+@media (hover: none), (pointer: coarse) {
+  .candidate-card:hover,
+  .stat-card:hover { transform: none; box-shadow: var(--shadow-card); }
+  .btn-primary,
+  .btn-outline,
+  .btn-pill,
+  .nav-menu-item,
+  .avatar-circle { min-height: 44px; }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .nav-logo { font-size: 1.1rem; }
+  .nav-links.open {
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .nav-user-menu { right: max(12px, env(safe-area-inset-right)); }
+
+  .flex-between { flex-direction: row; gap: 12px; align-items: center; }
+  .page-header,
+  .section-header,
+  .ballot-actions,
+  .detail-toolbar { align-items: stretch; flex-direction: column; }
+  .page-header > .btn-primary,
+  .page-header > .btn-outline,
+  .section-header > .btn-primary,
+  .section-header > .btn-outline,
+  .ballot-actions > .btn-primary,
+  .ballot-actions > .btn-outline { width: 100%; }
+  .toolbar { align-items: stretch; }
+  .toolbar .search-input { flex: 1 1 240px; }
+  .toolbar .search-input input { width: 100%; }
+
+  .page-title { font-size: clamp(1.85rem, 9vw, 2.25rem); }
+  .section-title { font-size: 1.3rem; }
+  .card { padding: 20px; }
+  .stat-card { min-height: 0; }
+  .candidate-card-header { height: 150px; }
+  .dashboard-grid { grid-template-columns: 1fr; gap: 16px; }
+  .responsive-select { min-width: 0; width: 100%; }
+  .detail-toolbar .election-actions { width: 100%; }
+  .detail-toolbar .election-actions > * { flex: 1 1 160px; }
+
+  .stepper {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 10px;
+    max-width: none;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+  .step { min-width: 74px; scroll-snap-align: center; }
+  .step-connector { display: block; min-width: 22px; margin-left: -12px; margin-right: -12px; }
+  .step-label { max-width: 74px; text-align: center; }
+  .vote-option { align-items: flex-start; gap: 10px; padding: 14px; }
+  .vote-option-info { min-width: 0; gap: 12px; }
+  .vote-option-info > div:last-child { min-width: 0; }
+  .vote-option .radio-circle { margin-top: 14px; }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+    margin: 0;
+    border-radius: 14px 14px 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .modal > .flex-between { align-items: flex-start; }
+  .modal-close { min-width: 44px; min-height: 44px; flex: 0 0 44px; }
+  .modal-actions { position: sticky; bottom: 0; background: var(--modal-bg); padding-top: 12px; }
+}
+
+@media (max-width: 700px) {
+  .container,
+  .center-container {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .docket-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .docket-step { min-width: 0; padding: 12px; }
+  .workspace-tabs { margin-right: -16px; padding-right: 16px; scrollbar-width: thin; }
+
+  .responsive-table-card { border: 0; background: transparent; box-shadow: none; }
+  .responsive-table-card .table-wrap { width: 100%; margin: 0; overflow: visible; }
+  .responsive-table,
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td { display: block; width: 100%; }
+  .responsive-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .responsive-table tbody { display: grid; gap: 12px; }
+  .responsive-table tr {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-white);
+    box-shadow: var(--shadow-card);
+  }
+  .responsive-table td {
+    display: grid;
+    grid-template-columns: minmax(84px, .4fr) minmax(0, 1fr);
+    gap: 14px;
+    padding: 9px 0;
+    border: 0;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .responsive-table td + td { border-top: 1px solid var(--border); }
+  .responsive-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .responsive-table .responsive-copy { max-width: none; overflow: visible; white-space: normal; }
+  .responsive-table .table-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .responsive-table .table-actions::before { flex: 0 0 100%; }
+  .responsive-table .table-actions .btn-pill,
+  .responsive-table .table-actions .btn-outline { flex: 1 1 120px; }
+}
+
+@media (max-width: 480px) {
+  .footer {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .form-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn-primary,
+  .modal-actions .btn-outline { width: 100%; }
+  .responsive-table td { grid-template-columns: 76px minmax(0, 1fr); gap: 10px; }
 }

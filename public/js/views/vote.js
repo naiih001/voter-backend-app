@@ -27,7 +27,7 @@ export async function view(params, root) {
   root.style.margin = '0 auto';
 
   root.innerHTML = `
-    <div class="flex-between mt-32">
+    <div class="page-header mt-32">
       <div>
         <h1 class="page-title">Cast Your Vote</h1>
         <p class="page-subtitle">Select one candidate per position, then review.</p>
@@ -67,9 +67,28 @@ export async function view(params, root) {
     return;
   }
 
-  const positions = positionsRes.data;
+  const votesRes = await api.get('/votes/mine');
+  const previousVotes = votesRes.ok ? votesRes.data : [];
+  const votedPositionIds = new Set(
+    previousVotes
+      .filter((vote) => String(vote.election?.id) === String(election.id))
+      .map((vote) => String(vote.position?.id))
+  );
+  const positions = positionsRes.data.filter((position) => !votedPositionIds.has(String(position.id)));
+
+  if (positions.length === 0) {
+    stepperEl.innerHTML = '';
+    contentEl.innerHTML = '';
+    contentEl.appendChild(ui.emptyState('You have already voted for every position in this election.'));
+    return;
+  }
+
   let currentStep = 0;
   let selections = JSON.parse(localStorage.getItem('uv_ballot') || '{}');
+  selections = Object.fromEntries(
+    Object.entries(selections).filter(([positionId]) => positions.some((position) => String(position.id) === positionId))
+  );
+  localStorage.setItem('uv_ballot', JSON.stringify(selections));
   let submitted = false;
 
   function renderStepper() {
@@ -112,7 +131,7 @@ export async function view(params, root) {
         <p class="text-muted" style="text-align:center;padding:20px;">Loading candidates…</p>
       </div>
       <hr class="divider">
-      <div class="flex-between mt-24">
+      <div class="ballot-actions mt-24">
         <a href="/dashboard" data-link class="btn-outline">← Previous</a>
         <button class="btn-primary" id="review-btn" ${selections[position.id] ? '' : 'disabled'}>
           ${currentStep < positions.length - 1 ? 'Next Position →' : 'Review Selection →'}
@@ -199,7 +218,7 @@ export async function view(params, root) {
       <p class="page-subtitle text-center">Please confirm your selections before submitting.</p>
       <div class="vote-options mt-32">${reviewItems}</div>
       <hr class="divider">
-      <div class="flex-between mt-24">
+      <div class="ballot-actions mt-24">
         <button class="btn-outline" id="back-btn">← Back to Edit</button>
         <button class="btn-primary" id="submit-btn">Submit Ballot →</button>
       </div>`;

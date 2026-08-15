@@ -8,20 +8,20 @@ import { ui } from '../../core/ui.js';
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
-    <div class="flex-between mt-32">
+    <div class="page-header mt-32">
       <div>
         <h1 class="page-title">Candidates</h1>
         <p class="page-subtitle">Manage candidates contesting each position.</p>
       </div>
       <button class="btn-primary" id="create-btn">+ New Candidate</button>
     </div>
-    <div class="flex-between mt-16">
+    <div class="toolbar mt-16">
       <div class="search-input">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="search" class="candidate-search" placeholder="Search by name…">
       </div>
     </div>
-    <div id="candidates-table" class="card mt-16" style="padding:0;"></div>`;
+    <div id="candidates-table" class="card responsive-table-card mt-16" style="padding:0;"></div>`;
 
   const tableEl = root.querySelector('#candidates-table');
 
@@ -52,16 +52,16 @@ export async function view(params, root) {
     }
     tableEl.innerHTML = `
       <div class="table-wrap">
-        <table class="table">
+        <table class="table responsive-table">
           <thead><tr><th>Name</th><th>Position</th><th>Matric</th><th>Manifesto</th><th style="text-align:right;">Actions</th></tr></thead>
           <tbody>
             ${candidates.map((c) => `
               <tr data-id="${c.id}">
-                <td><strong>${ui.escapeHtml(c.name)}</strong></td>
-                <td class="text-muted">${ui.escapeHtml(c.position?.title || '—')}</td>
-                <td class="text-muted">${ui.escapeHtml(c.matric_number || '—')}</td>
-                <td class="text-muted" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ui.escapeHtml(c.manifesto || '—')}</td>
-                <td style="text-align:right;white-space:nowrap;">
+                <td data-label="Name"><strong>${ui.escapeHtml(c.name)}</strong></td>
+                <td data-label="Position" class="text-muted">${ui.escapeHtml(c.position?.title || '—')}</td>
+                <td data-label="Matric" class="text-muted">${ui.escapeHtml(c.matric_number || '—')}</td>
+                <td data-label="Manifesto" class="text-muted responsive-copy">${ui.escapeHtml(c.manifesto || '—')}</td>
+                <td data-label="Actions" class="table-actions">
                   <button class="btn-pill act-edit">Edit</button>
                   <button class="btn-pill act-delete">Delete</button>
                 </td>

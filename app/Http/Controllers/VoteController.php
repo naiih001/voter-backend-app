@@ -33,7 +33,7 @@ class VoteController extends Controller
         }
 
         // Check if election is active
-        $position = \App\Models\Position::with('election')->find($request->integer('position_id'));
+        $position = Position::with('election')->find($request->integer('position_id'));
         $election = $position->election;
 
         if ($election->status !== 'open'
@@ -96,32 +96,40 @@ class VoteController extends Controller
             ]);
         }
 
-        // Use transaction with lock to prevent race conditions
-        return DB::transaction(function () use ($user, $validated, $candidate) {
-            // Lock the voter's potential vote row for this position
-            $existingVote = Vote::where('voter_id', $user->id)
-                ->where('position_id', $validated['position_id'])
-                ->lockForUpdate()
-                ->first();
+        try {
+            return DB::transaction(function () use ($user, $validated, $candidate) {
+                $existingVote = Vote::where('voter_id', $user->id)
+                    ->where('position_id', $validated['position_id'])
+                    ->lockForUpdate()
+                    ->first();
 
-            if ($existingVote) {
+                if ($existingVote) {
+                    throw ValidationException::withMessages([
+                        'position_id' => 'Already voted for this position.',
+                    ]);
+                }
+
+                $vote = Vote::create([
+                    'election_id' => $candidate->position->election_id,
+                    'position_id' => $validated['position_id'],
+                    'candidate_id' => $validated['candidate_id'],
+                    'voter_id' => $user->id,
+                ]);
+
+                return response()->json([
+                    'message' => 'Vote cast successfully.',
+                    'vote' => $vote,
+                ], 201);
+            });
+        } catch (QueryException $exception) {
+            if (in_array($exception->getCode(), ['23000', '23505'], true)) {
                 throw ValidationException::withMessages([
                     'position_id' => 'Already voted for this position.',
                 ]);
             }
 
-            $vote = Vote::create([
-                'election_id' => $candidate->position->election_id,
-                'position_id' => $validated['position_id'],
-                'candidate_id' => $validated['candidate_id'],
-                'voter_id' => $user->id,
-            ]);
-
-            return response()->json([
-                'message' => 'Vote cast successfully.',
-                'vote' => $vote,
-            ], 201);
-        });
+            throw $exception;
+        }
     }
 
     /**

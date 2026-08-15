@@ -13,9 +13,9 @@ export async function view(params, root) {
     <h1 class="page-title mt-32">Admin Dashboard</h1>
     <p class="page-subtitle">Overview of voting activity and system counts.</p>
 
-    <div class="flex-between mt-24" style="align-items:flex-end;">
+    <div class="section-header mt-24 section-header-end">
       <h3 class="section-title">Voting Statistics</h3>
-      <div class="form-group" style="margin-bottom:0;min-width:240px;">
+      <div class="form-group responsive-select" style="margin-bottom:0;">
         <label class="form-label">Filter by election</label>
         <select class="form-input" id="stats-election"></select>
       </div>
@@ -27,7 +27,7 @@ export async function view(params, root) {
       <div id="by-position" class="mt-16"></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-top:24px;">
+    <div class="dashboard-grid mt-24">
       <div class="card">
         <h3 class="section-title">Recent Audit Log</h3>
         <div id="audit-list" class="mt-16"></div>
