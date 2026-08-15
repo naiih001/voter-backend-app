@@ -9,12 +9,25 @@ import { ui } from '../../core/ui.js';
 export async function view(params, root) {
   root.className = 'container';
   root.innerHTML = `
-    <h1 class="page-title mt-32">Users</h1>
-    <p class="page-subtitle">Manage voter and administrator accounts.</p>
+    <div class="flex-between mt-32"><div><h1 class="page-title">Users</h1><p class="page-subtitle">Manage voter and administrator accounts.</p></div><button class="btn-primary" id="create-admin">Add administrator</button></div>
     <div id="users-table" class="card mt-24" style="padding:0;"></div>`;
 
   const tableEl = root.querySelector('#users-table');
   tableEl.appendChild(ui.loadingBlock('Loading users…'));
+  root.querySelector('#create-admin').addEventListener('click', createAdminModal);
+
+  function createAdminModal() {
+    const name = ui.field.text({ label: 'Full name' });
+    const email = ui.field.text({ label: 'Email', type: 'email' });
+    const password = ui.field.text({ label: 'Temporary password', type: 'password' });
+    const confirm = ui.field.text({ label: 'Confirm password', type: 'password' });
+    const modal = ui.openModal({ title: 'Add administrator', body: ui.el('div', {}, name.node, email.node, password.node, confirm.node), actions: [{ label: 'Cancel', class: 'btn-outline', onClick: ui.closeModal }, { label: 'Create administrator', class: 'btn-primary', onClick: () => {} }] });
+    modal.actionsNode.querySelector('.btn-primary').addEventListener('click', async () => {
+      const response = await api.post('/users', { name: name.value(), email: email.value(), password: password.value(), password_confirmation: confirm.value() });
+      if (!response.ok) { ui.toast(response.data?.message || 'Administrator could not be created.', 'error'); return; }
+      ui.closeModal(); ui.toast('Administrator created.', 'success'); load();
+    });
+  }
 
   async function load() {
     const res = await api.get('/users');

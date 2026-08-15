@@ -250,7 +250,8 @@ export async function logout() {
 }
 
 function activeClass(path) {
-  return getCurrentPath() === path ? 'active' : '';
+  const current = getCurrentPath();
+  return current === path || (path !== '/admin' && current.startsWith(`${path}/`)) ? 'active' : '';
 }
 
 export function renderNav() {
@@ -275,8 +276,6 @@ export function renderNav() {
     links = el('div', { class: 'nav-links' },
       el('a', { href: '/admin', 'data-link': '', class: activeClass('/admin') }, 'Dashboard'),
       el('a', { href: '/admin/elections', 'data-link': '', class: activeClass('/admin/elections') }, 'Elections'),
-      el('a', { href: '/admin/positions', 'data-link': '', class: activeClass('/admin/positions') }, 'Positions'),
-      el('a', { href: '/admin/candidates', 'data-link': '', class: activeClass('/admin/candidates') }, 'Candidates'),
       el('a', { href: '/admin/users', 'data-link': '', class: activeClass('/admin/users') }, 'Users'),
       el('a', { href: '/admin/audit', 'data-link': '', class: activeClass('/admin/audit') }, 'Audit Log'),
       el('a', { href: '/dashboard', 'data-link': '', class: activeClass('/dashboard') }, 'Voter View'),

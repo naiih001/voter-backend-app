@@ -27,20 +27,55 @@ function bindTabs(root) {
   root.querySelectorAll('.tabs').forEach((tabsContainer) => {
     const tabs = tabsContainer.querySelectorAll('.tab');
     tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        const panel = tabsContainer.parentElement.querySelector(`.tab-panel[data-tab="${target}"]`);
-        tabsContainer.parentElement.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
-        if (panel) panel.classList.add('active');
+      const activate = (target, moveFocus = false) => {
+        tabs.forEach((t) => {
+          const isActive = t.dataset.tab === target;
+          t.classList.toggle('active', isActive);
+          t.setAttribute('aria-selected', String(isActive));
+          t.tabIndex = isActive ? 0 : -1;
+        });
+
+        tabsContainer.parentElement.querySelectorAll('.tab-panel').forEach((panel) => {
+          const isActive = panel.dataset.tab === target;
+          panel.classList.toggle('active', isActive);
+          panel.hidden = !isActive;
+        });
+
+        if (moveFocus) {
+          tabsContainer.querySelector(`.tab[data-tab="${target}"]`)?.focus();
+        }
+      };
+
+      tab.addEventListener('click', () => activate(tab.dataset.tab));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const currentIndex = [...tabs].indexOf(tab);
+        const nextIndex = event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? tabs.length - 1
+            : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        activate(tabs[nextIndex].dataset.tab, true);
       });
     });
+
+    const activeTab = tabsContainer.querySelector('.tab.active') || tabs[0];
+    if (activeTab) {
+      tabsContainer.setAttribute('role', 'tablist');
+      activeTab.click();
+    }
   });
 }
 
-async function finishLogin(res, btn, alertEl) {
+async function finishLogin(res, btn, alertEl, expectedRole = null) {
   if (res?.ok) {
+    if (expectedRole && res.data.user?.role !== expectedRole) {
+      ui.showAlert(alertEl, 'This account is not an administrator. Use the Student sign-in tab or an administrator account.');
+      btn.disabled = false;
+      btn.innerHTML = `${LOCK_SVG} Secure Login`;
+      return;
+    }
     api.setToken(res.data.token);
     store.setUser(res.data.user);
     const role = res.data.user?.role;
@@ -57,12 +92,12 @@ export async function login(params, root) {
   root.style.marginTop = '80px';
 
   root.innerHTML = authShell(`
-    <div class="tabs">
-      <button class="tab active" data-tab="student">Student</button>
-      <button class="tab" data-tab="admin">Administrator</button>
+    <div class="tabs" role="tablist" aria-label="Account type">
+      <button class="tab active" id="student-login-tab" type="button" role="tab" aria-selected="true" aria-controls="student-login-panel" data-tab="student">Student</button>
+      <button class="tab" id="admin-login-tab" type="button" role="tab" aria-selected="false" aria-controls="admin-login-panel" data-tab="admin" tabindex="-1">Administrator</button>
     </div>
 
-    <div class="tab-panel active" data-tab="student" style="margin-top: 20px;">
+    <div class="tab-panel active" id="student-login-panel" role="tabpanel" aria-labelledby="student-login-tab" data-tab="student" style="margin-top: 20px;">
       <div class="info-banner">
         ${SHIELD_SVG}<span>Secure 256-bit Encrypted Session</span>
       </div>
@@ -89,7 +124,7 @@ export async function login(params, root) {
       </form>
     </div>
 
-    <div class="tab-panel" data-tab="admin" style="margin-top: 20px;">
+    <div class="tab-panel" id="admin-login-panel" role="tabpanel" aria-labelledby="admin-login-tab" data-tab="admin" style="margin-top: 20px;" hidden>
       <div class="info-banner">
         ${SHIELD_SVG}<span>Secure 256-bit Encrypted Session</span>
       </div>
@@ -152,7 +187,7 @@ export async function login(params, root) {
     btn.innerHTML = '<span class="spinner"></span> Signing in…';
     ui.hideAlert(alertEl);
     const res = await api.post('/login', { email, password }, false);
-    await finishLogin(res, btn, alertEl);
+    await finishLogin(res, btn, alertEl, 'admin');
   });
 }
 
@@ -225,37 +260,11 @@ export async function register(params, root) {
       </form>
     </div>
 
-    <div class="tab-panel" data-tab="admin" style="margin-top: 20px;">
-      <form id="admin-register-form" onsubmit="return false;">
-        <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" id="admin-name" class="form-input" placeholder="Admin Name" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <div class="input-wrapper">
-            ${USER_SVG}
-            <input type="email" id="admin-email" class="form-input" placeholder="admin@university.edu" required>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input type="password" id="admin-password" class="form-input" placeholder="Min. 8 characters" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirm Password</label>
-            <input type="password" id="admin-password-confirm" class="form-input" placeholder="Re-enter password" required>
-          </div>
-        </div>
-        <button type="submit" id="admin-register-btn" class="btn-primary" style="width: 100%; margin-top: 16px;">Create Account</button>
-      </form>
-    </div>
+    <p class="text-muted mt-16">Administrator accounts are issued by the university election office.</p>
   `);
 
   root.insertAdjacentHTML('beforeend', '<p class="auth-card-footer mt-16">Already have an account? <a href="/login" data-link>Sign in</a></p>');
 
-  bindTabs(root);
   const alertEl = root.querySelector('#auth-alert');
 
   root.querySelector('#student-register-form').addEventListener('submit', async (e) => {
@@ -280,26 +289,6 @@ export async function register(params, root) {
     await finishRegister(res, btn, alertEl);
   });
 
-  root.querySelector('#admin-register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = root.querySelector('#admin-register-btn');
-    const payload = {
-      name: root.querySelector('#admin-name').value.trim(),
-      email: root.querySelector('#admin-email').value.trim(),
-      password: root.querySelector('#admin-password').value,
-      password_confirmation: root.querySelector('#admin-password-confirm').value,
-      role: 'admin',
-    };
-    if (!payload.name || !payload.email || !payload.password) {
-      ui.showAlert(alertEl, 'Please fill in all fields.');
-      return;
-    }
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Creating…';
-    ui.hideAlert(alertEl);
-    const res = await api.post('/register', payload, false);
-    await finishRegister(res, btn, alertEl);
-  });
 }
 
 export async function forgot(params, root) {
