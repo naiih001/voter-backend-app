@@ -65,7 +65,7 @@ export async function detail(params, root) {
   const readiness = election.readiness || { ready: false, checks: [] };
   workspace.innerHTML = `
     <a href="/admin/elections" class="link-blue">Back to elections</a>
-    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div>
+    <div class="flex-between mt-16"><div><h1 class="page-title">${ui.escapeHtml(election.title)}</h1><p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p></div><div class="election-actions">${election.status !== 'draft' ? '<button class="btn-outline" id="share-election">Share election</button>' : ''}<span class="badge-pill ${STATUS_CLASS[election.status] || ''}">${ui.escapeHtml(election.status)}</span></div></div>
     ${docket(election)}
     <nav class="workspace-tabs" aria-label="Election workspace"><a href="#overview" class="active">Overview</a><a href="#ballot">Ballot</a><a href="#schedule">Schedule</a><a href="/admin/elections/${election.id}/results">Results</a></nav>
     <section id="overview" class="mt-24"><div class="card"><div class="flex-between"><h2 class="section-title">Publication readiness</h2>${lifecycleButton(election)}</div>
@@ -76,6 +76,13 @@ export async function detail(params, root) {
       <p class="mt-16"><strong>Starts</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.start_time))}</span></p><p class="mt-16"><strong>Ends</strong><br><span class="text-muted">${ui.escapeHtml(ui.formatDate(election.end_time))}</span></p></section>`;
 
   workspace.querySelector('#publish-election')?.addEventListener('click', () => lifecycle(election, 'publish'));
+  workspace.querySelector('#share-election')?.addEventListener('click', () => {
+    ui.shareLink({
+      title: election.title,
+      text: election.description || 'View this election on UniVote EVS.',
+      url: `${location.origin}/elections/${election.id}`,
+    });
+  });
   workspace.querySelector('#unpublish-election')?.addEventListener('click', () => lifecycle(election, 'unpublish'));
   workspace.querySelector('#edit-election')?.addEventListener('click', () => electionEditor(election));
   workspace.querySelector('#add-position')?.addEventListener('click', () => positionEditor(election));

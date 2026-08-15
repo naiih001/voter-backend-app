@@ -5,6 +5,7 @@
 import { api } from '../core/api.js';
 import { ui } from '../core/ui.js';
 import { navigate } from '../core/router.js';
+import { store } from '../core/store.js';
 
 function avatarColor(i) { return `var(--candidate-${i % 6})`; }
 function avatarBg(i) { return `var(--candidate-bg-${i % 6})`; }
@@ -47,13 +48,15 @@ export async function view(params, root) {
 export async function detail(params, root) {
   root.className = 'container';
   const id = params.id;
+  if (api.token && !store.getUser()) await store.refreshUser();
+  const user = store.getUser();
   root.innerHTML = `
-    <a href="/elections" data-link class="link-blue mt-32" style="display:inline-block;">← All Elections</a>
+    ${user ? '<a href="/elections" data-link class="link-blue mt-32" style="display:inline-block;">← All Elections</a>' : ''}
     <div id="election-detail" class="mt-16"></div>`;
   const container = root.querySelector('#election-detail');
   container.appendChild(ui.loadingBlock('Loading election…'));
 
-  const res = await api.get(`/elections/${id}`);
+  const res = await api.get(`/elections/${id}`, false);
   if (!res.ok) {
     container.innerHTML = '';
     container.appendChild(ui.el('div', { class: 'alert alert-error' }, 'Failed to load election.'));
@@ -67,11 +70,27 @@ export async function detail(params, root) {
     <p class="page-subtitle">${ui.escapeHtml(election.description || 'No description provided.')}</p>
     <div class="flex-between mt-16">
       <span class="btn-pill" style="cursor:default;">${positions.length} positions</span>
-      <button class="btn-primary" id="vote-cta">Go to Vote →</button>
+      <div class="election-actions">
+        <button class="btn-outline" id="share-election">Share election</button>
+        <button class="btn-primary" id="vote-cta">${user ? 'Go to Vote →' : 'Sign in to vote'}</button>
+      </div>
     </div>
     <div id="positions" class="mt-24"></div>`;
 
+  container.querySelector('#share-election').addEventListener('click', () => {
+    ui.shareLink({
+      title: election.title,
+      text: election.description || 'View this election on UniVote EVS.',
+      url: `${location.origin}/elections/${election.id}`,
+    });
+  });
+
   container.querySelector('#vote-cta').addEventListener('click', () => {
+    if (!user) {
+      sessionStorage.setItem('uv_return_path', `/elections/${election.id}`);
+      navigate('/login');
+      return;
+    }
     localStorage.setItem('uv_election_id', String(election.id));
     navigate('/vote');
   });

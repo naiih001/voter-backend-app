@@ -37,7 +37,7 @@ const routes = [
   { pattern: '/vote', view: vote.view, auth: 'user' },
   { pattern: '/profile', view: profile.view, auth: 'user' },
   { pattern: '/elections', view: elections.view, auth: 'user' },
-  { pattern: '/elections/:id', view: elections.detail, auth: 'user' },
+  { pattern: '/elections/:id', view: elections.detail },
   { pattern: '/admin', view: adminDashboard.view, auth: 'admin' },
   { pattern: '/admin/elections', view: adminElections.view, auth: 'admin' },
   { pattern: '/admin/elections/:id', view: adminElections.detail, auth: 'admin' },

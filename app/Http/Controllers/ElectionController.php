@@ -28,10 +28,13 @@ class ElectionController extends Controller
      */
     public function show(Election $election): JsonResponse
     {
-        abort_unless(request()->user()->isAdmin() || $election->isPublished(), 404);
+        $user = auth('sanctum')->user();
+        $isAdmin = $user?->isAdmin() ?? false;
+
+        abort_unless($isAdmin || $election->isPublished(), 404);
 
         $election->load(['positions' => fn ($q) => $q->with('candidates')]);
-        if (request()->user()->isAdmin()) {
+        if ($isAdmin) {
             $election->setAttribute('readiness', $this->readiness($election));
         }
         return response()->json($election);

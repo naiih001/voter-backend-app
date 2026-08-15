@@ -83,6 +83,24 @@ export function toast(msg, type = 'success') {
   }, 3000);
 }
 
+export async function shareLink({ title, text = '', url }) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return;
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Election link copied.', 'success');
+  } catch {
+    toast('Could not copy the election link.', 'error');
+  }
+}
+
 /* ---------- Form field builders ---------- */
 
 export const field = {
@@ -325,7 +343,7 @@ export function renderFooter() {
 }
 
 export const ui = {
-  escapeHtml, el, showAlert, hideAlert, toast, openModal, closeModal,
+  escapeHtml, el, showAlert, hideAlert, toast, shareLink, openModal, closeModal,
   confirmDialog, field, spinner, loadingBlock, emptyState, formatDate,
   getInitials, toBackendDate, toLocalInput, renderNav, renderFooter,
 };

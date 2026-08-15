@@ -97,7 +97,7 @@ class ElectionTest extends TestCase
 
     public function test_show_election_with_positions(): void
     {
-        $election = Election::factory()->create();
+        $election = Election::factory()->create(['published_at' => now()]);
         $position = $election->positions()->create(['title' => 'President']);
         $position->candidates()->create(['name' => 'Alice']);
 
@@ -106,6 +106,34 @@ class ElectionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(1, 'positions');
+    }
+
+    public function test_guest_can_view_published_election(): void
+    {
+        $election = Election::factory()->create(['published_at' => now()]);
+
+        $this->getJson("/api/elections/{$election->id}")
+            ->assertOk()
+            ->assertJsonPath('id', $election->id)
+            ->assertJsonMissingPath('readiness');
+    }
+
+    public function test_guest_cannot_view_unpublished_election(): void
+    {
+        $election = Election::factory()->create(['published_at' => null]);
+
+        $this->getJson("/api/elections/{$election->id}")
+            ->assertNotFound();
+    }
+
+    public function test_admin_can_view_unpublished_election(): void
+    {
+        $election = Election::factory()->create(['published_at' => null]);
+
+        $this->actingAs($this->admin)
+            ->getJson("/api/elections/{$election->id}")
+            ->assertOk()
+            ->assertJsonStructure(['readiness']);
     }
 
     public function test_admin_can_delete_election(): void
