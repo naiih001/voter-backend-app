@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ElectionStatus;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\Position;
@@ -37,7 +36,7 @@ class VoteController extends Controller
         $position = \App\Models\Position::with('election')->find($request->integer('position_id'));
         $election = $position->election;
 
-        if ($election->status !== ElectionStatus::OPEN
+        if ($election->status !== 'open'
             || $election->start_time > now()
             || $election->end_time < now()) {
             return response()->json([
@@ -89,7 +88,7 @@ class VoteController extends Controller
 
         // Check election is active
         $election = $candidate->position->election;
-        if ($election->status !== ElectionStatus::OPEN
+        if ($election->status !== 'open'
             || $election->start_time > now()
             || $election->end_time < now()) {
             throw ValidationException::withMessages([
