@@ -5,10 +5,9 @@
 import { api } from '../core/api.js';
 import { ui } from '../core/ui.js';
 
-const PALETTE = ['#16A34A', '#2563EB', '#F97316', '#9333EA', '#DC2626', '#0891B2'];
-const HEADER = ['#DCFCE7', '#DBEAFE', '#FEF3C7', '#F3E8FF', '#FEE2E2', '#CFFAFE'];
-
-function colorIdx(i) { return i % PALETTE.length; }
+function colorIdx(i) { return i % 6; }
+function paletteVar(i) { return `var(--candidate-${i})`; }
+function headerVar(i) { return `var(--candidate-bg-${i})`; }
 
 export async function view(params, root) {
   root.className = 'container';
@@ -86,8 +85,8 @@ export async function view(params, root) {
       const faculty = c.manifesto ? c.manifesto.split(' ').slice(0, 3).join(' ') + '…' : 'No manifesto';
       return `
         <div class="candidate-card" data-position="${c.position_id}" data-name="${ui.escapeHtml(c.name.toLowerCase())}">
-          <div class="candidate-card-header" style="background:${HEADER[ci]};">
-            <div class="candidate-avatar-lg" style="background:${PALETTE[ci]};">${ui.escapeHtml(ui.getInitials(c.name))}</div>
+          <div class="candidate-card-header" style="background:${headerVar(ci)};">
+            <div class="candidate-avatar-lg" style="background:${paletteVar(ci)};">${ui.escapeHtml(ui.getInitials(c.name))}</div>
             <div class="verified-badge">Verified</div>
           </div>
           <div class="candidate-card-body">

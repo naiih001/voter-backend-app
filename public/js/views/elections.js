@@ -6,10 +6,8 @@ import { api } from '../core/api.js';
 import { ui } from '../core/ui.js';
 import { navigate } from '../core/router.js';
 
-function avatarColor(i) {
-  const palette = ['#16A34A', '#2563EB', '#F97316', '#9333EA', '#DC2626', '#0891B2'];
-  return palette[i % palette.length];
-}
+function avatarColor(i) { return `var(--candidate-${i % 6})`; }
+function avatarBg(i) { return `var(--candidate-bg-${i % 6})`; }
 
 export async function view(params, root) {
   root.className = 'container';
@@ -91,7 +89,7 @@ export async function detail(params, root) {
       <div class="candidate-grid" style="margin-top:16px;grid-template-columns:repeat(4,1fr);">
         ${(p.candidates || []).map((c, ci) => `
           <div class="candidate-card">
-            <div class="candidate-card-header" style="background:${avatarColor(pi + ci)}22;">
+            <div class="candidate-card-header" style="background:${avatarBg(pi + ci)};">
               <div class="candidate-avatar-lg" style="background:${avatarColor(pi + ci)};">${ui.escapeHtml(ui.getInitials(c.name))}</div>
             </div>
             <div class="candidate-card-body">

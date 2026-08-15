@@ -19,6 +19,7 @@ class Election extends Model
         'status',
         'start_time',
         'end_time',
+        'published_at',
         'created_by',
     ];
 
@@ -28,6 +29,7 @@ class Election extends Model
             'status' => ElectionStatus::class,
             'start_time' => 'datetime',
             'end_time' => 'datetime',
+            'published_at' => 'datetime',
         ];
     }
 
@@ -48,7 +50,7 @@ class Election extends Model
 
     public function scopeOpen($query)
     {
-        return $query->where('status', ElectionStatus::OPEN);
+        return $query->whereNotNull('published_at');
     }
 
     public function scopeActive($query)
@@ -56,5 +58,23 @@ class Election extends Model
         return $query->open()
             ->where('start_time', '<=', now())
             ->where('end_time', '>=', now());
+    }
+
+    public function getStatusAttribute(): string
+    {
+        if (! $this->published_at) {
+            return 'draft';
+        }
+
+        if (now()->lt($this->start_time)) {
+            return 'scheduled';
+        }
+
+        return now()->lte($this->end_time) ? 'open' : 'closed';
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_at !== null;
     }
 }

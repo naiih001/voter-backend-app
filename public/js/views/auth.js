@@ -57,11 +57,6 @@ export async function login(params, root) {
   root.style.marginTop = '80px';
 
   root.innerHTML = authShell(`
-    <div class="tabs">
-      <button class="tab active" data-tab="student">Student</button>
-      <button class="tab" data-tab="admin">Administrator</button>
-    </div>
-
     <div class="tab-panel active" data-tab="student" style="margin-top: 20px;">
       <div class="info-banner">
         ${SHIELD_SVG}<span>Secure 256-bit Encrypted Session</span>
@@ -225,37 +220,11 @@ export async function register(params, root) {
       </form>
     </div>
 
-    <div class="tab-panel" data-tab="admin" style="margin-top: 20px;">
-      <form id="admin-register-form" onsubmit="return false;">
-        <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" id="admin-name" class="form-input" placeholder="Admin Name" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <div class="input-wrapper">
-            ${USER_SVG}
-            <input type="email" id="admin-email" class="form-input" placeholder="admin@university.edu" required>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input type="password" id="admin-password" class="form-input" placeholder="Min. 8 characters" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirm Password</label>
-            <input type="password" id="admin-password-confirm" class="form-input" placeholder="Re-enter password" required>
-          </div>
-        </div>
-        <button type="submit" id="admin-register-btn" class="btn-primary" style="width: 100%; margin-top: 16px;">Create Account</button>
-      </form>
-    </div>
+    <p class="text-muted mt-16">Administrator accounts are issued by the university election office.</p>
   `);
 
   root.insertAdjacentHTML('beforeend', '<p class="auth-card-footer mt-16">Already have an account? <a href="/login" data-link>Sign in</a></p>');
 
-  bindTabs(root);
   const alertEl = root.querySelector('#auth-alert');
 
   root.querySelector('#student-register-form').addEventListener('submit', async (e) => {
@@ -280,26 +249,6 @@ export async function register(params, root) {
     await finishRegister(res, btn, alertEl);
   });
 
-  root.querySelector('#admin-register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = root.querySelector('#admin-register-btn');
-    const payload = {
-      name: root.querySelector('#admin-name').value.trim(),
-      email: root.querySelector('#admin-email').value.trim(),
-      password: root.querySelector('#admin-password').value,
-      password_confirmation: root.querySelector('#admin-password-confirm').value,
-      role: 'admin',
-    };
-    if (!payload.name || !payload.email || !payload.password) {
-      ui.showAlert(alertEl, 'Please fill in all fields.');
-      return;
-    }
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Creating…';
-    ui.hideAlert(alertEl);
-    const res = await api.post('/register', payload, false);
-    await finishRegister(res, btn, alertEl);
-  });
 }
 
 export async function forgot(params, root) {

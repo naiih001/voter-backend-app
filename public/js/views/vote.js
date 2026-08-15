@@ -6,8 +6,8 @@ import { api } from '../core/api.js';
 import { ui } from '../core/ui.js';
 import { navigate } from '../core/router.js';
 
-const PALETTE = ['#16A34A', '#2563EB', '#F97316', '#9333EA', '#DC2626', '#0891B2'];
-const HEADER = ['#DCFCE7', '#DBEAFE', '#FEF3C7', '#F3E8FF', '#FEE2E2', '#CFFAFE'];
+function paletteVar(i) { return `var(--candidate-${i})`; }
+function headerVar(i) { return `var(--candidate-bg-${i})`; }
 
 function lockIcon() {
   return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`;
@@ -138,12 +138,12 @@ export async function view(params, root) {
     const reviewBtn = contentEl.querySelector('#review-btn');
 
     const options = candidates.map((c, i) => {
-      const ci = i % PALETTE.length;
+      const ci = i % 6;
       const selected = selections[position.id] == c.id;
       return `
         <div class="vote-option ${selected ? 'selected' : ''}" data-candidate-id="${c.id}">
           <div class="vote-option-info">
-            <div class="avatar-placeholder" style="background:${HEADER[ci]};color:${PALETTE[ci]};">${ui.escapeHtml(ui.getInitials(c.name))}</div>
+            <div class="avatar-placeholder" style="background:${headerVar(ci)};color:${paletteVar(ci)};">${ui.escapeHtml(ui.getInitials(c.name))}</div>
             <div>
               <h4>${ui.escapeHtml(c.name)}</h4>
               <p>${ui.escapeHtml(c.manifesto ? c.manifesto.split(' ').slice(0, 4).join(' ') + '…' : 'Candidate')}</p>
