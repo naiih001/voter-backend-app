@@ -15,6 +15,7 @@ class Candidate extends Model
         'position_id',
         'user_id',
         'name',
+        'matric_number',
         'photo_path',
         'manifesto',
     ];

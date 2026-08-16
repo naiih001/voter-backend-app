@@ -50,15 +50,33 @@ class CandidateTest extends TestCase
         $response = $this->actingAs($this->admin)->postJson('/api/candidates', [
             'position_id' => $this->position->id,
             'name' => 'Bob',
+            'matric_number' => 'STU002',
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('candidate.name', 'Bob');
+            ->assertJsonPath('candidate.name', 'Bob')
+            ->assertJsonPath('candidate.matric_number', 'STU002');
 
         $this->assertDatabaseHas('candidates', [
             'position_id' => $this->position->id,
             'name' => 'Bob',
+            'matric_number' => 'STU002',
         ]);
+    }
+
+    public function test_candidate_matric_number_must_be_unique_within_a_position(): void
+    {
+        $this->position->candidates()->create([
+            'name' => 'Bob',
+            'matric_number' => 'STU002',
+        ]);
+
+        $this->actingAs($this->admin)->postJson('/api/candidates', [
+            'position_id' => $this->position->id,
+            'name' => 'Charlie',
+            'matric_number' => 'STU002',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('matric_number');
     }
 
     public function test_admin_create_candidate_validates_required_fields(): void
